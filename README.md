@@ -2,67 +2,98 @@
 
 Opinionated scaffolding for AI agent instructions.
 
-This toolkit creates starter folders for new projects with:
+Spin up a new project with deeply considered coding standards baked in from the start.
+Your AI copilot should write code the way *you* would — with type safety,
+functional composition, clean architecture, and visual craft.
 
-- `.github/copilot-instructions.md` for always-on project standards
-- `.github/instructions/*.instructions.md` for language/framework-specific rules
-- `AGENTS.md` compatibility for multi-agent workflows
+## What you get
 
-## Why this exists
+When you run `agent-kit init`, your new project gets:
 
-You want consistent project setup shaped by strong opinions:
+| File | What it does |
+|------|-------------|
+| `.github/copilot-instructions.md` | Always-on project standards for every chat and suggestion |
+| `.github/instructions/*.instructions.md` | Scoped rules by language, framework, or concern |
+| `AGENTS.md` | Ground rules for multi-agent collaboration |
+| `README.md` | Project documentation explaining the setup |
 
-- Beauty and UX craft
-- Organization and maintainability
-- Clean Code and refactoring discipline
-- Functional composition and deterministic behavior
-- Typed code by default (especially TypeScript)
+## Philosophy
 
-## Profiles
+These instructions are shaped by years of reading, building, and refactoring:
 
-- `typescript-react`
-- `python-data`
-- `elixir-phoenix`
-- `dotnet-api`
-- `laravel`
-- `go-service`
+- **Grokking Simplicity** — separate actions, calculations, and data
+- **Clean Code & Clean Architecture** — structure, naming, and discipline
+- **Refactoring** — continuous, safe, mechanical improvement
+- **Designing Data-Intensive Applications** — reliable systems at scale
 
-## Usage
+And some strong opinions:
+
+- **TypeScript** is the default. Type everything.
+- **PostgreSQL** is the database. Schema changes are first-class.
+- **Composition over inheritance.** Small functions. Pure cores.
+- **Tailwind + shadcn/ui + Motion** = beautiful, accessible interfaces.
+- **Elixir** is wonderful. **Go** is great when you need it. **C#/.NET** is better than people think.
+- **NATS** for messaging. **Parquet** for archival data.
+
+## Quick start
 
 ```bash
 npm install
 npm run build
 
-node dist/cli.js list
-node dist/cli.js init ./my-app --profile typescript-react
+# Interactive mode — asks you questions
+node dist/cli.js init ./my-app
+
+# Or go fast with flags
+node dist/cli.js init ./my-app -p typescript-react -y
 ```
 
-Or in development mode:
+## CLI reference
 
 ```bash
-npm run dev -- init ./my-app --profile typescript-react
+# List all available profiles and add-ons
+agent-kit list
+
+# Interactive scaffold (default)
+agent-kit init ./my-app
+
+# Non-interactive with specific profile
+agent-kit init ./my-app --profile python-data --yes
+
+# With add-ons
+agent-kit init ./api --profile go-service --addon data-intensive
+
+# Force overwrite in existing directory
+agent-kit init ./existing-project --profile typescript-react --force
 ```
 
-## Generated structure (example)
+## Profiles
 
-```text
-my-app/
-  .github/
-    copilot-instructions.md
-    instructions/
-      architecture.instructions.md
-      typescript-react.instructions.md
-  AGENTS.md
-  README.md
-```
+| Profile | Stack |
+|---------|-------|
+| `typescript-react` | TypeScript, React, React Router v7, discriminated unions, feature folders |
+| `python-data` | Python, Pydantic, typed pipelines, composable transforms |
+| `elixir-phoenix` | Elixir, Phoenix, contexts, pattern matching, supervision |
+| `dotnet-api` | C#, .NET, Clean Architecture, records, EF Core |
+| `laravel` | PHP, Laravel, thin controllers, actions, form requests |
+| `go-service` | Go, small interfaces, explicit errors, domain packages |
+
+## Add-ons
+
+| Add-on | What it covers |
+|--------|---------------|
+| `data-intensive` | Postgres best practices, NATS messaging, Parquet, idempotency, observability |
+| `frontend-craft` | Tailwind discipline, shadcn/ui composition, Motion with purpose, accessibility |
 
 ## Extending
 
-Add new profiles under `templates/profiles/<profile-id>/` with one or more `*.instructions.md` files.
+Add new profiles under `templates/profiles/<profile-id>/` or new add-ons under
+`templates/addons/<addon-id>/`.
 
-The CLI merges:
+The CLI merges templates in order:
+1. `templates/core` (always)
+2. `templates/profiles/<profile>` (chosen profile)
+3. `templates/addons/<addon>` (each selected add-on)
 
-1. `templates/core`
-2. `templates/profiles/<profile-id>`
-
-Use `{{PROJECT_NAME}}` placeholder in template text files when needed.
+Use `{{PROJECT_NAME}}` as a placeholder in any template text file — it's replaced
+with the target directory name at scaffold time.

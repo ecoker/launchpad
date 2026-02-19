@@ -1,45 +1,75 @@
-# Team Engineering Instructions
+# {{PROJECT_NAME}} — Engineering Standards
 
-## Core values
+> "Simplicity is prerequisite for reliability." — Edsger Dijkstra
 
-- Prefer clean, readable, maintainable code over clever code.
-- Keep functions deterministic when possible: same input, same output, minimal hidden state.
-- Prefer composition over inheritance and deep class hierarchies.
-- Keep modules small, cohesive, and purpose-driven.
-- Write code that is easy to refactor.
+These are the ground rules. They apply to every file, every language, every PR.
 
-## Architecture and organization
+## Philosophy
 
-- Separate domain logic from framework and transport layers.
-- Keep side effects at boundaries (I/O, network, DB, filesystem).
-- Model business rules explicitly; do not bury them in controllers/components.
-- Favor explicit contracts and typed boundaries.
+We write software that is **clean**, **typed**, **functional-first**, and **beautiful**.
+We care about the humans who read code as much as the machines that run it.
+We build data-intensive systems that are reliable, observable, and maintainable.
 
-## Data and reliability
+## Core principles
 
-- Treat data models and schema evolution as first-class design concerns.
-- Prefer PostgreSQL for relational storage unless requirements clearly suggest otherwise.
-- For event-driven workflows, design messages and handlers to be idempotent.
-- Favor reliability, observability, and debuggability over premature optimization.
+### Composition over inheritance
+Build behavior by composing small, focused functions — not by extending class trees.
+If you're reaching for `extends`, pause and ask whether a plain function or a
+module-level composition would be clearer.
 
-## Frontend quality
+### Deterministic by default
+Functions should be predictable: same inputs → same outputs. Push randomness,
+clocks, network calls, and file I/O to the edges. The core should be pure.
 
-- Prioritize visual polish, accessibility, and usability.
-- Use Tailwind design tokens consistently; avoid random one-off styling.
-- Use animation intentionally to clarify state and flow, not as decoration.
+```
+// ✅ Pure transformation — easy to test, easy to trust
+const applyDiscount = (price: number, rate: number): number => price * (1 - rate);
 
-## Code review bar
+// ❌ Hidden dependency — harder to test, surprising in production
+const applyDiscount = (price: number): number => price * (1 - getConfigRate());
+```
 
-- Keep PRs focused and small enough to review quickly.
-- Add tests for behavior changes where tests exist.
-- Leave the codebase cleaner than you found it.
+### Explicit over implicit
+Type your boundaries. Name things for intent. Make data flow visible.
+When someone reads your code six months from now, they shouldn't need archaeology.
+
+### Small, cohesive modules
+Each file should do one thing well. If a module needs a paragraph to explain
+what it does, it's doing too much. Split it.
+
+## Architecture
+
+- **Separate domain from infrastructure.** Business rules live in pure modules.
+  HTTP handlers, database queries, and queue consumers are plumbing — keep them thin.
+- **Push side effects to boundaries.** I/O happens at the edges; transformations
+  happen in the middle. This is the functional core, imperative shell pattern.
+- **Model business rules explicitly.** Use types and discriminated unions to make
+  illegal states unrepresentable instead of relying on runtime validation alone.
+- **Design for change.** Code will be refactored. Write it so refactoring is safe
+  and mechanical, not scary and manual.
+
+## Data
+
+- **PostgreSQL is the default** for relational/transactional workloads.
+- **Schema changes are first-class.** Migrations are versioned, reviewed, and
+  reversible. Never hand-edit production schemas.
+- **Idempotency matters.** Design message handlers and data pipelines so they
+  can be safely retried without side effects.
+- **Observability is not optional.** Structured logs, correlation IDs, health
+  checks, and metrics from day one — not bolted on after an incident.
+
+## Quality bar
+
+- Leave every file cleaner than you found it.
+- Keep PRs focused: one concern per PR.
+- Write tests for behavior, not implementation details.
+- Prefer integration tests that exercise real boundaries over mocks of everything.
 
 ## Influences
 
-These practices are strongly influenced by:
+These opinions didn't come from nowhere:
 
-- *Grokking Simplicity* (Eric Normand)
-- *Clean Code* (Robert C. Martin)
-- *Clean Architecture* (Robert C. Martin)
-- *Refactoring* (Martin Fowler)
-- *Designing Data-Intensive Applications* (Martin Kleppmann)
+- *Grokking Simplicity* (Eric Normand) — actions, calculations, and data
+- *Clean Code* & *Clean Architecture* (Robert C. Martin) — structure and discipline
+- *Refactoring* (Martin Fowler) — continuous, safe improvement
+- *Designing Data-Intensive Applications* (Martin Kleppmann) — building reliable systems at scale

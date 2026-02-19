@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { copyDirectory, exists, isDirectoryEmpty } from "./fs-utils.js";
@@ -12,9 +12,36 @@ export type InitOptions = {
   targetDir: string;
   profileId: string;
   force: boolean;
+  addons: string[];
 };
 
-export async function scaffoldProject(options: InitOptions): Promise<{ profile: Profile; outputPath: string }> {
+type ScaffoldResult = {
+  profile: Profile;
+  outputPath: string;
+  createdFiles: string[];
+};
+
+async function collectFiles(dir: string, base = dir): Promise<string[]> {
+  if (!(await exists(dir))) return [];
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await collectFiles(full, base)));
+    } else {
+      files.push(full);
+    }
+  }
+  return files;
+}
+
+const ADDON_TEMPLATES: Record<string, string> = {
+  "data-intensive": "addons/data-intensive",
+  "frontend-craft": "addons/frontend-craft",
+};
+
+export async function scaffoldProject(options: InitOptions): Promise<ScaffoldResult> {
   const profile = findProfile(options.profileId);
   if (!profile) {
     throw new Error(`Unknown profile '${options.profileId}'. Run 'agent-kit list' to see available profiles.`);
@@ -29,18 +56,28 @@ export async function scaffoldProject(options: InitOptions): Promise<{ profile: 
   await mkdir(outputPath, { recursive: true });
 
   const replacements = {
-    "{{PROJECT_NAME}}": path.basename(outputPath)
+    "{{PROJECT_NAME}}": path.basename(outputPath),
   };
 
-  await copyDirectory(path.join(templateRoot, "core"), outputPath, {
-    overwrite: options.force,
-    replacements
-  });
+  const copyOpts = { overwrite: options.force, replacements };
 
-  await copyDirectory(path.join(templateRoot, "profiles", profile.id), outputPath, {
-    overwrite: options.force,
-    replacements
-  });
+  // 1. Core templates (always)
+  await copyDirectory(path.join(templateRoot, "core"), outputPath, copyOpts);
 
-  return { profile, outputPath };
+  // 2. Profile templates
+  await copyDirectory(path.join(templateRoot, "profiles", profile.id), outputPath, copyOpts);
+
+  // 3. Add-on templates
+  for (const addon of options.addons) {
+    const addonSubdir = ADDON_TEMPLATES[addon];
+    if (!addonSubdir) continue;
+    const addonPath = path.join(templateRoot, addonSubdir);
+    if (await exists(addonPath)) {
+      await copyDirectory(addonPath, outputPath, copyOpts);
+    }
+  }
+
+  const createdFiles = await collectFiles(outputPath);
+
+  return { profile, outputPath, createdFiles };
 }

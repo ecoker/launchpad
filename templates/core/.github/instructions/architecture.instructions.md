@@ -1,15 +1,72 @@
 ---
 name: Architecture and Refactoring
-description: Baseline architecture, organization, and refactoring standards
+description: How we structure code and how we improve it safely over time
 applyTo: "**"
 ---
 
-# Architecture and refactoring rules
+# Architecture and refactoring
 
-- Keep business logic framework-agnostic where practical.
-- Push side effects to boundaries and keep core logic pure.
-- Prefer explicit data flow over hidden mutable state.
-- Refactor in small, behavior-preserving steps.
-- Remove duplication by extracting composable functions.
-- Name modules and functions for intent, not implementation details.
-- Avoid deep inheritance trees; prefer composition.
+## The shape of good code
+
+Good architecture is boring in the best way. You should be able to open any
+module and immediately understand what it does, what it depends on, and where
+its boundaries are.
+
+### Layering
+
+Organize code into layers with clear dependency direction:
+
+```
+  ┌─────────────────────────────┐
+  │   Transport / UI / CLI      │  ← Thin. Translates external input.
+  ├─────────────────────────────┤
+  │   Application / Use Cases   │  ← Orchestrates domain logic + side effects.
+  ├─────────────────────────────┤
+  │   Domain / Core             │  ← Pure. No framework imports. Testable.
+  ├─────────────────────────────┤
+  │   Infrastructure / Adapters │  ← DB, HTTP clients, queues, filesystems.
+  └─────────────────────────────┘
+```
+
+Domain code never imports from transport or infrastructure. Dependencies point inward.
+
+### Naming
+
+- Name functions for **what they do**, not **how** they do it.
+- Name modules for the **concept** they own, not the **pattern** they implement.
+- `calculateShippingCost` > `shippingHelper`. `OrderPricing` > `OrderManager`.
+
+## Refactoring discipline
+
+Refactoring is not a separate task. It's part of every change.
+
+- **Small steps.** Each commit should leave the code working. If a refactoring
+  is bigger than one PR, break it into a chain of safe, reviewable steps.
+- **Extract, don't duplicate.** When you see similar logic in two places, extract
+  a shared function. Compose it — don't copy it.
+- **Rename fearlessly.** If a name no longer matches its purpose, change it now.
+  Bad names compound into bad understanding.
+- **Delete dead code.** If it's not called, it's not documentation — it's noise.
+  Version control remembers. You don't need to.
+
+## Composition patterns
+
+```
+// ✅ Compose small, focused functions
+const processOrder = pipe(
+  validateItems,
+  calculateTotals,
+  applyDiscounts,
+  formatReceipt,
+);
+
+// ❌ God function that does everything
+function processOrder(order) {
+  // 200 lines of validation, calculation, formatting, logging...
+}
+```
+
+- Prefer **function composition** and **pipelines** over deep call hierarchies.
+- Prefer **plain data objects** over class instances for domain models when the
+  language supports it well.
+- Prefer **explicit parameters** over ambient context or service locators.
