@@ -1,0 +1,12 @@
+/_build/
+/deps/
+*.ez
+/priv/static/assets/
+/tmp/
+npm-debug.log
+*.db
+*.db-journal
+.DS_Store
+Thumbs.db
+.elixir_ls/
+.vscode/

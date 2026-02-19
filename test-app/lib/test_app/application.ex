@@ -1,0 +1,24 @@
+defmodule TestApp.Application do
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      TestAppWeb.Telemetry,
+      {Phoenix.PubSub, name: TestApp.PubSub},
+      {DNSCluster, query: Application.get_env(:test_app, :dns_cluster_query) || :ignore},
+      TestAppWeb.Endpoint
+    ]
+
+    opts = [strategy: :one_for_one, name: TestApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  @impl true
+  def config_change(changed, _new, removed) do
+    TestAppWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
