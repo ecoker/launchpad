@@ -4,26 +4,34 @@ defmodule TestAppWeb.ChatLive do
 
   Messages are broadcast via PubSub and held only in each connected
   LiveView's assigns. When the last user disconnects, messages vanish.
+  Presence tracks who's currently in the room.
   """
 
   use TestAppWeb, :live_view
 
   alias TestApp.Chat.Message
+  alias TestAppWeb.Presence
 
   @topic "chat:lobby"
+  @presence_topic "presence:lobby"
 
   # ── Lifecycle ──────────────────────────────────────────────────────
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket), do: Phoenix.PubSub.subscribe(TestApp.PubSub, @topic)
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(TestApp.PubSub, @topic)
+      Phoenix.PubSub.subscribe(TestApp.PubSub, @presence_topic)
+    end
 
     {:ok,
      socket
      |> assign(:messages, [])
      |> assign(:username, "")
      |> assign(:draft, "")
-     |> assign(:joined, false)}
+     |> assign(:joined, false)
+     |> assign(:points, 0)
+     |> assign(:leaderboard, [])}
   end
 
   # ── Events ─────────────────────────────────────────────────────────
@@ -35,7 +43,15 @@ defmodule TestAppWeb.ChatLive do
     if username == "" do
       {:noreply, put_flash(socket, :error, "Username can't be blank")}
     else
-      {:noreply, assign(socket, username: username, joined: true)}
+      Presence.track(self(), @presence_topic, username, %{points: 0})
+
+      notification = system_message("#{username} joined the room")
+      Phoenix.PubSub.broadcast(TestApp.PubSub, @topic, {:new_message, notification})
+
+      {:noreply,
+       socket
+       |> assign(username: username, joined: true, points: 0)
+       |> assign(:leaderboard, build_leaderboard())}
     end
   end
 
@@ -43,8 +59,13 @@ defmodule TestAppWeb.ChatLive do
     message = Message.new(socket.assigns.username, body)
 
     if Message.valid?(message) do
+      earned = count_letters(body)
+      new_points = socket.assigns.points + earned
+
+      Presence.update(self(), @presence_topic, socket.assigns.username, %{points: new_points})
       Phoenix.PubSub.broadcast(TestApp.PubSub, @topic, {:new_message, message})
-      {:noreply, assign(socket, draft: "")}
+
+      {:noreply, assign(socket, draft: "", points: new_points)}
     else
       {:noreply, socket}
     end
@@ -54,11 +75,39 @@ defmodule TestAppWeb.ChatLive do
     {:noreply, assign(socket, draft: body)}
   end
 
-  # ── PubSub ─────────────────────────────────────────────────────────
+  # ── PubSub / Presence ──────────────────────────────────────────────
 
   @impl true
   def handle_info({:new_message, message}, socket) do
     {:noreply, assign(socket, messages: socket.assigns.messages ++ [message])}
+  end
+
+  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff"}, socket) do
+    {:noreply, assign(socket, leaderboard: build_leaderboard())}
+  end
+
+  # ── Helpers ─────────────────────────────────────────────────────────
+
+  defp build_leaderboard do
+    @presence_topic
+    |> Presence.list()
+    |> Enum.map(fn {name, %{metas: [meta | _]}} -> {name, Map.get(meta, :points, 0)} end)
+    |> Enum.sort_by(fn {_name, points} -> points end, :desc)
+  end
+
+  defp count_letters(text) do
+    text
+    |> String.graphemes()
+    |> Enum.count(&String.match?(&1, ~r/\p{L}/u))
+  end
+
+  defp system_message(text) do
+    %Message{
+      id: :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false),
+      username: "system",
+      body: text,
+      sent_at: DateTime.utc_now()
+    }
   end
 
   # ── Template ───────────────────────────────────────────────────────
@@ -72,8 +121,13 @@ defmodule TestAppWeb.ChatLive do
       <%= if not @joined do %>
         <.join_form />
       <% else %>
-        <.message_list messages={@messages} current_user={@username} />
-        <.message_form draft={@draft} />
+        <div class="flex gap-4 flex-1 min-h-0">
+          <div class="flex-1 flex flex-col min-h-0">
+            <.message_list messages={@messages} current_user={@username} />
+            <.message_form draft={@draft} />
+          </div>
+          <.leaderboard entries={@leaderboard} />
+        </div>
       <% end %>
     </div>
     """
@@ -113,15 +167,38 @@ defmodule TestAppWeb.ChatLive do
       phx-hook="ScrollBottom"
     >
       <div :for={msg <- @messages} id={msg.id} class="flex flex-col">
-        <span class={[
-          "text-xs font-semibold",
-          if(msg.username == @current_user, do: "text-blue-400", else: "text-green-400")
-        ]}>
-          {msg.username}
-        </span>
-        <p class="text-gray-200">{msg.body}</p>
+        <%= if msg.username == "system" do %>
+          <p class="text-yellow-400 text-xs italic text-center py-1">{msg.body}</p>
+        <% else %>
+          <span class={[
+            "text-xs font-semibold",
+            if(msg.username == @current_user, do: "text-blue-400", else: "text-green-400")
+          ]}>
+            {msg.username}
+          </span>
+          <p class="text-gray-200">{msg.body}</p>
+        <% end %>
       </div>
     </div>
+    """
+  end
+
+  attr :entries, :list, required: true
+
+  defp leaderboard(assigns) do
+    ~H"""
+    <aside class="w-48 shrink-0 bg-gray-800 rounded p-3 overflow-y-auto">
+      <h2 class="text-xs font-bold uppercase text-gray-500 mb-2 tracking-wide">Talky Talk Leaderboard</h2>
+      <ol class="space-y-1">
+        <li :for={{name, points} <- @entries} class="text-sm text-gray-300 flex items-center justify-between gap-2 min-w-0">
+          <span class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block shrink-0"></span>
+            <span class="truncate">{name}</span>
+          </span>
+          <span class="text-xs font-mono text-yellow-400 shrink-0">{points}</span>
+        </li>
+      </ol>
+    </aside>
     """
   end
 

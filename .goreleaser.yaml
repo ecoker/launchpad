@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: launchpad
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/launchpad
+    binary: launchpad
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/ehrencoker/agent-kit/internal/cli.version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+
+brews:
+  - repository:
+      owner: ehrencoker
+      name: homebrew-tap
+    name: launchpad
+    homepage: "https://github.com/ehrencoker/agent-kit"
+    description: "AI-powered coding instruction scaffolder"
+    license: "MIT"
+    install: |
+      bin.install "launchpad"
+    test: |
+      system "#{bin}/launchpad", "list"
+
+release:
+  github:
+    owner: ehrencoker
+    name: agent-kit
+  draft: false
+  prerelease: auto

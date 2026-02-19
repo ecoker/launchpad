@@ -8,6 +8,7 @@ defmodule TestApp.Application do
     children = [
       TestAppWeb.Telemetry,
       {Phoenix.PubSub, name: TestApp.PubSub},
+      TestAppWeb.Presence,
       {DNSCluster, query: Application.get_env(:test_app, :dns_cluster_query) || :ignore},
       TestAppWeb.Endpoint
     ]

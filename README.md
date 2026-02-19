@@ -1,99 +1,93 @@
-# agent-kit
+# 🚀 launchpad
 
-Opinionated scaffolding for AI agent instructions.
+Set up AI coding instructions for your project through a conversation.
 
-Spin up a new project with deeply considered coding standards baked in from the start.
-Your AI copilot should write code the way *you* would — with type safety,
-functional composition, clean architecture, and visual craft.
+Tell Launchpad what you're building — the language, framework, your style
+preferences — and it generates tailored `.github/copilot-instructions.md`,
+scoped `.instructions.md` files, and `AGENTS.md` for your repo.
 
-## What you get
+Powered by OpenAI. Your copilot should write code the way *you* would.
 
-When you run `agent-kit init`, your new project gets:
+## How it works
 
-| File | What it does |
-|------|-------------|
+1. Run `launchpad init ./my-project`
+2. Have a brief conversation about what you're building
+3. Launchpad generates customized AI instruction files
+4. Your AI copilot is now briefed on your standards
+
+No rigid templates. No picking from a list. Just describe your project and get
+instructions tailored to your stack, team, and coding philosophy.
+
+## What gets generated
+
+| File | Purpose |
+|------|---------|
 | `.github/copilot-instructions.md` | Always-on project standards for every chat and suggestion |
 | `.github/instructions/*.instructions.md` | Scoped rules by language, framework, or concern |
 | `AGENTS.md` | Ground rules for multi-agent collaboration |
-| `README.md` | Project documentation explaining the setup |
+
+## Install
+
+```bash
+# Homebrew (macOS / Linux)
+brew install ehrencoker/tap/launchpad
+
+# Or curl
+curl -sSfL https://raw.githubusercontent.com/ehrencoker/agent-kit/main/install.sh | sh
+
+# Or build from source
+go install github.com/ehrencoker/agent-kit/cmd/launchpad@latest
+```
+
+## Usage
+
+```bash
+# Set your OpenAI API key
+export OPENAI_API_KEY="sk-..."
+
+# Start a conversation to generate instructions
+launchpad init ./my-app
+
+# Force overwrite in existing directory
+launchpad init ./existing-project --force
+
+# See the template knowledge base
+launchpad list
+```
+
+## Knowledge base
+
+Launchpad carries a curated library of example instructions as seed knowledge.
+These inform the tone, depth, and structure of what gets generated — but every
+output is customized to your conversation.
+
+| Area | Coverage |
+|------|----------|
+| TypeScript + React | React Router v7, Tailwind, shadcn/ui, Motion |
+| Python | Pydantic, functional style, data pipelines |
+| Elixir + Phoenix | LiveView, Ecto, OTP, pattern matching |
+| .NET | C# minimal APIs, Clean Architecture, EF Core |
+| Laravel | Inertia, Eloquent, actions, queues |
+| Go | Stdlib-first, small interfaces, explicit errors |
+| Data-intensive | Postgres, NATS, Parquet, event-driven |
+| Frontend craft | CSS architecture, animation, accessibility |
 
 ## Philosophy
 
-These instructions are shaped by years of reading, building, and refactoring:
+Shaped by:
 
-- **Grokking Simplicity** — separate actions, calculations, and data
-- **Clean Code & Clean Architecture** — structure, naming, and discipline
+- **Grokking Simplicity** — actions, calculations, data
+- **Clean Code & Clean Architecture** — naming, structure, discipline
 - **Refactoring** — continuous, safe, mechanical improvement
-- **Designing Data-Intensive Applications** — reliable systems at scale
-
-And some strong opinions:
-
-- **TypeScript** is the default. Type everything.
-- **PostgreSQL** is the database. Schema changes are first-class.
-- **Composition over inheritance.** Small functions. Pure cores.
-- **Tailwind + shadcn/ui + Motion** = beautiful, accessible interfaces.
-- **Elixir** is wonderful. **Go** is great when you need it. **C#/.NET** is better than people think.
-- **NATS** for messaging. **Parquet** for archival data.
-
-## Quick start
-
-```bash
-npm install
-npm run build
-
-# Interactive mode — asks you questions
-node dist/cli.js init ./my-app
-
-# Or go fast with flags
-node dist/cli.js init ./my-app -p typescript-react -y
-```
-
-## CLI reference
-
-```bash
-# List all available profiles and add-ons
-agent-kit list
-
-# Interactive scaffold (default)
-agent-kit init ./my-app
-
-# Non-interactive with specific profile
-agent-kit init ./my-app --profile python-data --yes
-
-# With add-ons
-agent-kit init ./api --profile go-service --addon data-intensive
-
-# Force overwrite in existing directory
-agent-kit init ./existing-project --profile typescript-react --force
-```
-
-## Profiles
-
-| Profile | Stack |
-|---------|-------|
-| `typescript-react` | TypeScript, React, React Router v7, discriminated unions, feature folders |
-| `python-data` | Python, Pydantic, typed pipelines, composable transforms |
-| `elixir-phoenix` | Elixir, Phoenix, contexts, pattern matching, supervision |
-| `dotnet-api` | C#, .NET, Clean Architecture, records, EF Core |
-| `laravel` | PHP, Laravel, thin controllers, actions, form requests |
-| `go-service` | Go, small interfaces, explicit errors, domain packages |
-
-## Add-ons
-
-| Add-on | What it covers |
-|--------|---------------|
-| `data-intensive` | Postgres best practices, NATS messaging, Parquet, idempotency, observability |
-| `frontend-craft` | Tailwind discipline, shadcn/ui composition, Motion with purpose, accessibility |
+- **Designing Data-Intensive Applications** — reliability at scale
 
 ## Extending
 
-Add new profiles under `templates/profiles/<profile-id>/` or new add-ons under
-`templates/addons/<addon-id>/`.
+Add example templates under `templates/profiles/<id>/` or `templates/addons/<id>/`
+to expand the knowledge base. Launchpad reads all templates and uses them as
+context when generating custom instructions.
 
-The CLI merges templates in order:
-1. `templates/core` (always)
-2. `templates/profiles/<profile>` (chosen profile)
-3. `templates/addons/<addon>` (each selected add-on)
+## Requirements
 
-Use `{{PROJECT_NAME}}` as a placeholder in any template text file — it's replaced
-with the target directory name at scaffold time.
+- An OpenAI API key (`OPENAI_API_KEY` env var or entered interactively)
+- That's it
