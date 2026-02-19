@@ -1,0 +1,24 @@
+{
+  "name": "agent-kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Opinionated project scaffolder for AI agent instructions.",
+  "type": "module",
+  "bin": {
+    "agent-kit": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "list": "tsx src/cli.ts list"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
