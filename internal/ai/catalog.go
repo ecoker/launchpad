@@ -17,6 +17,7 @@ type ContextAsset struct {
 
 func catalog() []ContextAsset {
 	return []ContextAsset{
+		// ── Core (always included) ───────────────────────────────────
 		{
 			ID:           "core.copilot",
 			Category:     "core",
@@ -39,25 +40,57 @@ func catalog() []ContextAsset {
 			TemplatePath: "core/AGENTS.md",
 		},
 		{
-			ID:           "profile.typescript-react",
-			Category:     "framework",
-			Label:        "TypeScript + React",
-			Summary:      "React Router v7, TypeScript-first frontend conventions, and pragmatic component patterns",
-			TemplatePath: "profiles/typescript-react/.github/instructions/typescript-react.instructions.md",
+			ID:           "core.design-system",
+			Category:     "design",
+			Label:        "Design System Baseline",
+			Summary:      "Dark-first visual identity, typography, spacing, and component DNA — ensures cohesion across all generated apps",
+			TemplatePath: "core/.github/instructions/design-system.instructions.md",
 		},
-		{
-			ID:           "profile.python-data",
-			Category:     "framework",
-			Label:        "Python Data / AI",
-			Summary:      "Pydantic-centric Python data and agent engineering conventions",
-			TemplatePath: "profiles/python-data/.github/instructions/python-data.instructions.md",
-		},
+
+		// ── Tier 1 Profiles (strongly recommended) ───────────────────
 		{
 			ID:           "profile.elixir-phoenix",
 			Category:     "framework",
 			Label:        "Elixir + Phoenix",
-			Summary:      "Phoenix + LiveView functional conventions for highly concurrent real-time systems",
+			Summary:      "Full-stack real-time web — LiveView, Ecto, OTP. Best AI context: entire app in one framework",
 			TemplatePath: "profiles/elixir-phoenix/.github/instructions/elixir-phoenix.instructions.md",
+		},
+		{
+			ID:           "profile.typescript-sveltekit",
+			Category:     "framework",
+			Label:        "TypeScript + SvelteKit",
+			Summary:      "Full-stack JS web — intuitive reactivity, SSR, minimal boilerplate. Best JS framework for AI",
+			TemplatePath: "profiles/typescript-sveltekit/.github/instructions/typescript-sveltekit.instructions.md",
+		},
+		{
+			ID:           "profile.ruby-rails",
+			Category:     "framework",
+			Label:        "Ruby on Rails",
+			Summary:      "Rapid full-stack web — generators, convention over configuration, fast to production",
+			TemplatePath: "profiles/ruby-rails/.github/instructions/ruby-rails.instructions.md",
+		},
+
+		// ── Tier 2 Profiles (domain-specific) ────────────────────────
+		{
+			ID:           "profile.typescript-nextjs",
+			Category:     "framework",
+			Label:        "TypeScript + Next.js",
+			Summary:      "React ecosystem full-stack — App Router, RSC, Vercel-optimized",
+			TemplatePath: "profiles/typescript-nextjs/.github/instructions/typescript-nextjs.instructions.md",
+		},
+		{
+			ID:           "profile.typescript-fastify",
+			Category:     "framework",
+			Label:        "TypeScript + Fastify",
+			Summary:      "Node.js API service — schema-driven routes, typed contracts, plugin architecture",
+			TemplatePath: "profiles/typescript-fastify/.github/instructions/typescript-fastify.instructions.md",
+		},
+		{
+			ID:           "profile.go-service",
+			Category:     "framework",
+			Label:        "Go Service",
+			Summary:      "Idiomatic Go service architecture with stdlib-first bias and explicit boundaries",
+			TemplatePath: "profiles/go-service/.github/instructions/go-service.instructions.md",
 		},
 		{
 			ID:           "profile.dotnet-api",
@@ -67,19 +100,42 @@ func catalog() []ContextAsset {
 			TemplatePath: "profiles/dotnet-api/.github/instructions/dotnet-api.instructions.md",
 		},
 		{
+			ID:           "profile.python-fastapi",
+			Category:     "framework",
+			Label:        "Python + FastAPI",
+			Summary:      "Async Python APIs with Pydantic types, ideal for ML/data service backends",
+			TemplatePath: "profiles/python-fastapi/.github/instructions/python-fastapi.instructions.md",
+		},
+		{
+			ID:           "profile.python-django",
+			Category:     "framework",
+			Label:        "Python + Django",
+			Summary:      "Batteries-included Python web — admin, ORM, auth, content management",
+			TemplatePath: "profiles/python-django/.github/instructions/python-django.instructions.md",
+		},
+		{
+			ID:           "profile.dart-flutter",
+			Category:     "framework",
+			Label:        "Dart + Flutter",
+			Summary:      "Cross-platform native apps — single codebase, widget composition, platform channels",
+			TemplatePath: "profiles/dart-flutter/.github/instructions/dart-flutter.instructions.md",
+		},
+		{
+			ID:           "profile.rust-axum",
+			Category:     "framework",
+			Label:        "Rust + Axum",
+			Summary:      "Performance-critical services — Tokio-based, type-safe, zero-cost abstractions",
+			TemplatePath: "profiles/rust-axum/.github/instructions/rust-axum.instructions.md",
+		},
+		{
 			ID:           "profile.laravel",
 			Category:     "framework",
 			Label:        "Laravel",
 			Summary:      "Laravel + Inertia project conventions for product-focused web apps",
 			TemplatePath: "profiles/laravel/.github/instructions/laravel.instructions.md",
 		},
-		{
-			ID:           "profile.go-service",
-			Category:     "framework",
-			Label:        "Go Service",
-			Summary:      "Idiomatic Go service architecture with stdlib-first bias and explicit boundaries",
-			TemplatePath: "profiles/go-service/.github/instructions/go-service.instructions.md",
-		},
+
+		// ── Add-ons ──────────────────────────────────────────────────
 		{
 			ID:           "addon.data-intensive",
 			Category:     "architecture",
@@ -94,6 +150,8 @@ func catalog() []ContextAsset {
 			Summary:      "Visual quality, accessibility, and interaction craftsmanship conventions",
 			TemplatePath: "addons/frontend-craft/.github/instructions/frontend-craft.instructions.md",
 		},
+
+		// ── Design Assets ────────────────────────────────────────────
 		{
 			ID:           "asset.palette.heroui-blue",
 			Category:     "palette",
@@ -115,6 +173,8 @@ func catalog() []ContextAsset {
 			Summary:      "Sans + monospace pairing for product UI and dev-facing surfaces",
 			TemplatePath: "assets/fonts/inter-jetbrains.instructions.md",
 		},
+
+		// ── Quality Assets ───────────────────────────────────────────
 		{
 			ID:           "asset.lint.strict",
 			Category:     "linting",
@@ -128,55 +188,6 @@ func catalog() []ContextAsset {
 			Label:        "Pragmatic Testing",
 			Summary:      "Fast feedback testing pyramid with contract and integration confidence",
 			TemplatePath: "assets/testing/pragmatic.instructions.md",
-		},
-		{
-			ID:           "asset.framework.csharp-dotnet",
-			Category:     "framework-opinion",
-			Label:        "C# (.NET) Opinion Pack",
-			Summary:      "Opinionated .NET service standards and architecture defaults",
-			TemplatePath: "assets/frameworks/csharp-dotnet.instructions.md",
-		},
-		{
-			ID:           "asset.framework.dart-flutter",
-			Category:     "framework-opinion",
-			Label:        "Dart (Flutter) Opinion Pack",
-			Summary:      "Opinionated Flutter app architecture and quality defaults",
-			TemplatePath: "assets/frameworks/dart-flutter.instructions.md",
-		},
-		{
-			ID:           "asset.framework.rust",
-			Category:     "framework-opinion",
-			Label:        "Rust Opinion Pack",
-			Summary:      "Opinionated Rust architecture and correctness-first defaults",
-			TemplatePath: "assets/frameworks/rust.instructions.md",
-		},
-		{
-			ID:           "asset.framework.typescript-nextjs",
-			Category:     "framework-opinion",
-			Label:        "TypeScript Next.js Opinion Pack",
-			Summary:      "Opinionated Next.js app structure and server/client boundary guidance",
-			TemplatePath: "assets/frameworks/typescript-nextjs.instructions.md",
-		},
-		{
-			ID:           "asset.framework.typescript-fastify",
-			Category:     "framework-opinion",
-			Label:        "TypeScript Fastify Opinion Pack",
-			Summary:      "Opinionated Fastify service standards with typed route contracts",
-			TemplatePath: "assets/frameworks/typescript-fastify.instructions.md",
-		},
-		{
-			ID:           "asset.framework.typescript-svelte",
-			Category:     "framework-opinion",
-			Label:        "TypeScript Svelte Opinion Pack",
-			Summary:      "Opinionated Svelte project structure and reactive design practices",
-			TemplatePath: "assets/frameworks/typescript-svelte.instructions.md",
-		},
-		{
-			ID:           "asset.framework.typescript-react-router-v7",
-			Category:     "framework-opinion",
-			Label:        "TypeScript React Router v7 Opinion Pack",
-			Summary:      "Opinionated React Router v7 route-module architecture guidance",
-			TemplatePath: "assets/frameworks/typescript-react-router-v7.instructions.md",
 		},
 	}
 }
@@ -202,7 +213,7 @@ func catalogSummaryLines() []string {
 func resolveContextAssets(selection Selection) ([]ContextAsset, error) {
 	byID := catalogMap()
 
-	base := []string{"core.copilot", "core.architecture", "core.agents"}
+	base := []string{"core.copilot", "core.architecture", "core.agents", "core.design-system"}
 	resolvedIDs := make([]string, 0, len(base)+len(selection.AddonIDs)+len(selection.AssetIDs)+2)
 	resolvedIDs = append(resolvedIDs, base...)
 

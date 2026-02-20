@@ -59,10 +59,9 @@ func (e *Engine) Chat(ctx context.Context, message string) (string, error) {
 	if strings.TrimSpace(message) == "" {
 		return "", fmt.Errorf("empty message")
 	}
-	systemPrompt := ""
-	if e.previousResponseID == "" {
-		systemPrompt = conversationSystemPrompt()
-	}
+	// Always send instructions — the Responses API does NOT carry them
+	// across previous_response_id chains.
+	systemPrompt := conversationSystemPrompt()
 	raw, id, err := e.call(ctx, message, systemPrompt, true)
 	if err != nil {
 		return "", err
@@ -86,7 +85,7 @@ func (e *Engine) ExtractDecision(ctx context.Context) (*Selection, error) {
 	extractPrompt := "Based on our conversation, extract the final stack decision.\n\n" +
 		"Return ONLY valid JSON — no markdown, no prose:\n" +
 		"{\n" +
-		"  \"profile_id\": \"<typescript-react|python-data|elixir-phoenix|dotnet-api|laravel|go-service>\",\n" +
+		"  \"profile_id\": \"<elixir-phoenix|typescript-sveltekit|ruby-rails|typescript-nextjs|typescript-fastify|go-service|dotnet-api|python-fastapi|python-django|dart-flutter|rust-axum|laravel>\",\n" +
 		"  \"addon_ids\": [],\n" +
 		"  \"asset_ids\": [],\n" +
 		"  \"confidence\": 0.0,\n" +
@@ -137,9 +136,19 @@ sel.Confidence, confidenceThreshold,
 	}
 	sort.Strings(summary)
 
+	// Pull scaffold command from the profile registry
+	scaffoldInfo := scaffoldCommandForProfile(sel.ProfileID)
+
 	prompt := fmt.Sprintf(
 "Generate AI instruction files for the project %q.\n\n"+
 "Selected: profile=%s | addons=%s | assets=%s\n\n"+
+"IMPORTANT — SCAFFOLD COMMAND:\n"+
+"The framework provides its own CLI scaffold command. The start.prompt.md MUST\n"+
+"use this command as step 1 instead of manually creating project boilerplate:\n"+
+"%s\n\n"+
+"The AI agent should NEVER generate framework boilerplate files (package.json,\n"+
+"mix.exs, Gemfile, etc.). The scaffold command handles all of that. The agent's\n"+
+"job is to write application code AFTER the scaffold is complete.\n\n"+
 "Use ONLY the asset content below as your source. Do not invent conventions.\n\n"+
 "%s\n"+
 "Output ONLY file blocks — no prose before or after:\n"+
@@ -148,12 +157,18 @@ sel.Confidence, confidenceThreshold,
 "1. .github/copilot-instructions.md — always-on standards from core + profile assets\n"+
 "2. .github/instructions/*.instructions.md — one per concern, YAML frontmatter applyTo glob required\n"+
 "3. AGENTS.md — multi-agent ground rules\n"+
-"4. .github/prompts/start.prompt.md — YAML frontmatter: description, agent: \"agent\", tools list; body bootstraps the project\n",
+"4. .github/prompts/start.prompt.md — YAML frontmatter with description, agent: \"agent\", tools list.\n"+
+"   Body MUST:\n"+
+"   a) Run the framework scaffold command first: %s\n"+
+"   b) Then proceed with application-specific implementation\n"+
+"   c) Never manually create files the scaffold already provides\n",
 projectName,
 sel.ProfileID,
 strings.Join(sel.AddonIDs, ", "),
 strings.Join(summary, ", "),
+scaffoldInfo,
 contextBlocks.String(),
+scaffoldInfo,
 	)
 
 	raw, _, err := e.call(ctx, prompt, "", false)
@@ -338,24 +353,80 @@ return strings.Join(catalogSummaryLines(), "\n")
 }
 
 func conversationSystemPrompt() string {
-var sb strings.Builder
-sb.WriteString("You are a senior engineering advisor embedded in Launchpad, a project scaffolding tool.\n\n")
-sb.WriteString("Your job: help the developer choose the right tech stack and coding standards for their project.\n\n")
-sb.WriteString("How to work:\n")
-sb.WriteString("- Listen carefully to what they describe\n")
-sb.WriteString("- Ask targeted questions to resolve ambiguity: team size, deploy target, scale, real-time needs\n")
-sb.WriteString("- When alternatives are given, explain tradeoffs and give a clear recommendation\n")
-sb.WriteString("- Keep responses brief and decision-focused\n")
-sb.WriteString("- Do not provide implementation code, file contents, or build tutorials\n")
-sb.WriteString("- Once you have a clear decision, explain it in one or two sentences and put READY_TO_GENERATE as the final line\n\n")
-sb.WriteString("Rules:\n")
-sb.WriteString("- Never ask about coding style or philosophy — Launchpad already has strong opinions on those\n")
-sb.WriteString("- Never recommend a stack outside the catalog below\n")
-sb.WriteString("- Be direct and opinionated — you are a partner, not a form\n\n")
-sb.WriteString("Available stacks and assets:\n")
-for _, line := range catalogSummaryLines() {
-sb.WriteString(line)
-sb.WriteByte('\n')
+	var sb strings.Builder
+
+	// CONSTRAINTS FIRST — these override everything
+	sb.WriteString("CONSTRAINTS — violating any of these is a failure:\n")
+	sb.WriteString("1. NEVER write code, code blocks, folder structures, data models, or architecture.\n")
+	sb.WriteString("2. NEVER use markdown headers (###) in replies.\n")
+	sb.WriteString("3. ONLY recommend stacks from the catalog below. Express, Socket.IO, and React Native do not exist in the catalog.\n")
+	sb.WriteString("4. NEVER skip Phase 1. Your first reply MUST be scope questions, not a recommendation.\n")
+	sb.WriteString("5. ONE phase per reply. Never combine phases.\n")
+	sb.WriteString("6. Maximum 6 sentences per reply.\n\n")
+
+	sb.WriteString("WRONG OUTPUT (this is what failure looks like — never do this):\n")
+	sb.WriteString("User: 'I want a real-time voting app'\n")
+	sb.WriteString("BAD: '### Core Features\n1. Room creation...\n### Suggested Tech Stack\nReact + Express + Socket.IO...\n### Starter Template\n```/backend/index.js```'\n")
+	sb.WriteString("This is wrong because it skips Phase 1, uses headers, writes code, and recommends stacks not in the catalog.\n\n")
+
+	sb.WriteString("You are Launchpad, a stack advisor. You follow three phases in strict order.\n\n")
+
+	// PHASE 1
+	sb.WriteString("PHASE 1 — SCOPE (1-3 rounds, start here ALWAYS):\n")
+	sb.WriteString("Ask 2-4 questions about features and behavior the user hasn't mentioned yet. Be specific to their project. Examples: Would you want a leaderboard? Multiple rounds? Countdown timer? Share via link or code? Should results persist after the session?\n")
+	sb.WriteString("Do NOT mention any technology. Do NOT recommend a stack. Just explore the idea.\n")
+	sb.WriteString("After enough rounds, summarize the features you've captured as a short numbered list and ask if anything is missing. Only move to Phase 2 after confirmation.\n\n")
+
+	// PHASE 2
+	sb.WriteString("PHASE 2 — OPTIONS (exactly 1 turn):\n")
+	sb.WriteString("Present 2-3 stack options from the catalog. For each: name, one sentence why it fits, and the scaffold command. Mark your top pick with ★. Ask which they want.\n\n")
+
+	// PHASE 3
+	sb.WriteString("PHASE 3 — COMMIT (exactly 1 turn):\n")
+	sb.WriteString("Confirm their choice in one sentence. Emit READY_TO_GENERATE on its own line.\n\n")
+
+	// DECISION MAP
+	sb.WriteString("DECISION MAP (★ = your top pick for that use case):\n")
+	sb.WriteString("real-time/live/presence/chat/voting/collaborative -> ★ elixir-phoenix | typescript-sveltekit\n")
+	sb.WriteString("full-stack JS web/SSR/content -> ★ typescript-sveltekit | typescript-nextjs\n")
+	sb.WriteString("CRUD/MVP/admin/content platform -> ★ ruby-rails | python-django\n")
+	sb.WriteString("React required/Vercel -> typescript-nextjs\n")
+	sb.WriteString("Node.js API/microservice -> typescript-fastify\n")
+	sb.WriteString("high-perf API/CLI/infra -> go-service\n")
+	sb.WriteString("enterprise API/C# -> dotnet-api\n")
+	sb.WriteString("Python API/ML/data -> python-fastapi\n")
+	sb.WriteString("Python full-stack/admin/CMS -> python-django\n")
+	sb.WriteString("native mobile -> dart-flutter\n")
+	sb.WriteString("perf-critical systems -> rust-axum\n")
+	sb.WriteString("PHP -> laravel\n\n")
+
+	sb.WriteString("Catalog IDs (for extraction step):\n")
+	for _, line := range catalogSummaryLines() {
+		sb.WriteString(line)
+		sb.WriteByte('\n')
+	}
+
+	return sb.String()
 }
-return sb.String()
+
+// scaffoldCommandForProfile returns the CLI scaffold command for a given profile ID.
+func scaffoldCommandForProfile(profileID string) string {
+	commands := map[string]string{
+		"elixir-phoenix":      "mix phx.new {{name}}",
+		"typescript-sveltekit": "npm create svelte@latest",
+		"ruby-rails":          "rails new {{name}}",
+		"typescript-nextjs":   "npx create-next-app@latest",
+		"typescript-fastify":  "npm init -y && npm install fastify",
+		"go-service":          "go mod init {{module}}",
+		"dotnet-api":          "dotnet new webapi -n {{name}}",
+		"python-fastapi":      "mkdir {{name}} && cd {{name}} && python -m venv .venv && pip install fastapi uvicorn",
+		"python-django":       "django-admin startproject {{name}}",
+		"dart-flutter":        "flutter create {{name}}",
+		"rust-axum":           "cargo new {{name}}",
+		"laravel":             "composer create-project laravel/laravel {{name}}",
+	}
+	if cmd, ok := commands[profileID]; ok {
+		return cmd
+	}
+	return "(no scaffold command defined)"
 }

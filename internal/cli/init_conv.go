@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/ehrencoker/agent-kit/internal/ai"
+	"github.com/ehrencoker/agent-kit/internal/scaffold"
 	"github.com/ehrencoker/agent-kit/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -111,15 +112,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 4. Conversation — natural language, streams to terminal
+	// 4. Conversation — natural language with loading spinners
 	fmt.Println()
 	fmt.Println(ui.Heading.Render("What are you building?"))
 	fmt.Println(ui.DimStyle.Render("Describe your project and I'll help you pick the right stack and standards."))
 	fmt.Println()
 
-	engine := ai.NewEngine(apiKey, func(chunk string) {
-		fmt.Print(chunk)
-	})
+	engine := ai.NewEngine(apiKey, nil)
 
 	ctx := context.Background()
 	reader := bufio.NewReader(os.Stdin)
@@ -135,40 +134,41 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println()
-	fmt.Print(ui.DimStyle.Render("Launchpad: "))
+	spin := ui.NewSpinner("Thinking...")
 	reply, err := engine.Chat(ctx, fmt.Sprintf(
 		"Project name: %q. What I'm building: %s", projectName, firstInput,
 	))
+	spin.Stop()
 	if err != nil {
 		return fmt.Errorf("conversation error: %w", err)
 	}
-	fmt.Println()
-	fmt.Println()
+	printLaunchpadReply(reply)
 
 	for !ai.IsReady(reply) {
-		fmt.Print(ui.DimStyle.Render("You (reply, /generate, or press Enter to generate): "))
+		fmt.Print(ui.Accent.Render("You: "))
 		userInput, readErr := reader.ReadString('\n')
 		if readErr != nil {
 			return fmt.Errorf("reading input: %w", readErr)
 		}
 		userInput = strings.TrimSpace(userInput)
-		if userInput == "" || strings.EqualFold(userInput, "/generate") {
+		if userInput == "" || strings.EqualFold(userInput, "/done") {
 			break
 		}
 
 		fmt.Println()
-		fmt.Print(ui.DimStyle.Render("Launchpad: "))
+		spin = ui.NewSpinner("Thinking...")
 		reply, err = engine.Chat(ctx, userInput)
+		spin.Stop()
 		if err != nil {
 			return fmt.Errorf("conversation error: %w", err)
 		}
-		fmt.Println()
-		fmt.Println()
+		printLaunchpadReply(reply)
 	}
 
 	// 5. Silent extraction — user never sees this
-	fmt.Println(ui.DimStyle.Render("Resolving selection..."))
+	spin = ui.NewSpinner("Resolving selection...")
 	sel, err := engine.ExtractDecision(ctx)
+	spin.Stop()
 	if err != nil {
 		return fmt.Errorf("extracting decision: %w", err)
 	}
@@ -177,11 +177,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 	printSelectionSummary(sel)
 
 	// 6. Generate files
-	fmt.Println()
-	fmt.Println(ui.Heading.Render("Generating your instruction files..."))
+	spin = ui.NewSpinner("Generating instruction files...")
 	fmt.Println()
 
 	files, err := engine.GenerateFiles(ctx, projectName, sel)
+	spin.Stop()
 	if err != nil {
 		return fmt.Errorf("generation error: %w", err)
 	}
@@ -220,7 +220,17 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println(ui.Heading.Render("Next steps:"))
 	fmt.Printf("  %s cd %s\n", ui.DimStyle.Render("1."), ui.FileStyle.Render(displayPath))
 	fmt.Printf("  %s Review the generated files — tweak anything that doesn't feel right\n", ui.DimStyle.Render("2."))
-	fmt.Printf("  %s Open Copilot Chat and type %s to bootstrap the project\n", ui.DimStyle.Render("3."), ui.Accent.Render("/start"))
+
+	// Show scaffold command if available for the selected profile
+	if profile := scaffold.FindProfile(sel.ProfileID); profile != nil && profile.ScaffoldCmd != "" {
+		scaffoldDisplay := strings.ReplaceAll(profile.ScaffoldCmd, "{{name}}", projectName)
+		scaffoldDisplay = strings.ReplaceAll(scaffoldDisplay, "{{module}}", projectName)
+		fmt.Printf("  %s Scaffold your project: %s\n", ui.DimStyle.Render("3."), ui.Accent.Render(scaffoldDisplay))
+		fmt.Printf("  %s Open Copilot Chat and type %s to start building\n", ui.DimStyle.Render("4."), ui.Accent.Render("/start"))
+	} else {
+		fmt.Printf("  %s Open Copilot Chat and type %s to bootstrap the project\n", ui.DimStyle.Render("3."), ui.Accent.Render("/start"))
+	}
+
 	fmt.Println()
 	fmt.Println(ui.DimStyle.Render("Your AI copilot is briefed. Go build something great."))
 	fmt.Println()
@@ -239,6 +249,16 @@ func printSelectionSummary(sel *ai.Selection) {
 	if sel.Rationale != "" {
 		fmt.Printf("%s %s\n", ui.DimStyle.Render("Why:     "), sel.Rationale)
 	}
+	fmt.Println()
+}
+
+// printLaunchpadReply displays the AI response, stripping the READY_TO_GENERATE token.
+func printLaunchpadReply(reply string) {
+	display := strings.ReplaceAll(reply, "READY_TO_GENERATE", "")
+	display = strings.ReplaceAll(display, "READY TO GENERATE", "")
+	display = strings.TrimSpace(display)
+	fmt.Print(ui.DimStyle.Render("Launchpad: "))
+	fmt.Println(display)
 	fmt.Println()
 }
 

@@ -2,11 +2,12 @@
 
 Set up AI coding instructions for your project through a conversation.
 
-Tell Launchpad what you're building — the language, framework, your style
-preferences — and it generates tailored `.github/copilot-instructions.md`,
+Tell Launchpad what you're building — not what language you want, but what
+problem you're solving — and it recommends the best framework for AI-assisted
+development, then generates tailored `.github/copilot-instructions.md`,
 scoped `.instructions.md` files, and `AGENTS.md` for your repo.
 
-Powered by OpenAI. Your copilot should write code the way *you* would.
+Powered by OpenAI. Opinionated by design.
 
 ## How it works
 
@@ -57,20 +58,49 @@ launchpad list
 
 ## Knowledge base
 
-Launchpad carries a curated library of example instructions as seed knowledge.
+Launchpad carries a curated, opinionated library of instruction templates.
 These inform the tone, depth, and structure of what gets generated — but every
 output is customized to your conversation.
 
-| Area | Coverage |
-|------|----------|
-| TypeScript + React | React Router v7, Tailwind, shadcn/ui, Motion |
-| Python | Pydantic, functional style, data pipelines |
-| Elixir + Phoenix | LiveView, Ecto, OTP, pattern matching |
-| .NET | C# minimal APIs, Clean Architecture, EF Core |
-| Laravel | Inertia, Eloquent, actions, queues |
-| Go | Stdlib-first, small interfaces, explicit errors |
+The system is **use-case driven**, not language-driven. Tell Launchpad what
+you're building and it recommends the best framework for AI-assisted
+development — not what's popular, but what gives you the best chance of
+shipping.
+
+### Recommended stacks (best for AI)
+
+| Stack | Best for | Scaffold |
+|-------|----------|----------|
+| Elixir + Phoenix | Real-time web, dashboards, chat, collaboration | `mix phx.new` |
+| TypeScript + SvelteKit | JS full-stack web, SSR, content sites | `npm create svelte@latest` |
+| Ruby on Rails | CRUD apps, MVPs, admin panels | `rails new` |
+
+### All supported stacks
+
+| Stack | Use case | Scaffold |
+|-------|----------|----------|
+| TypeScript + Next.js | React ecosystem, Vercel deployment | `npx create-next-app@latest` |
+| TypeScript + Fastify | Node.js API services | `npm init -y` |
+| Go Service | High-perf APIs, CLIs, infrastructure | `go mod init` |
+| .NET API | Enterprise APIs, C# ecosystem | `dotnet new webapi` |
+| Python + FastAPI | ML backends, data APIs | `python -m venv .venv` |
+| Python + Django | Python full-stack, admin-heavy | `django-admin startproject` |
+| Dart + Flutter | Mobile, cross-platform native | `flutter create` |
+| Rust + Axum | Performance-critical services | `cargo new` |
+| Laravel | PHP full-stack, SaaS | `composer create-project` |
+
+### Add-ons
+
+| Add-on | Coverage |
+|--------|----------|
 | Data-intensive | Postgres, NATS, Parquet, event-driven |
 | Frontend craft | CSS architecture, animation, accessibility |
+
+**Key opinions:**
+- Real-time → Phoenix, not React + server
+- Node.js API → Fastify, not Express
+- Mobile → Flutter, not React Native
+- Framework CLIs scaffold the project — AI writes app code, not boilerplate
 
 ## Philosophy
 

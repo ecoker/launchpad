@@ -10,40 +10,41 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 		issues = append(issues, "profile_id is required")
 	} else {
 		validProfile := map[string]bool{
-			"typescript-react": true,
-			"python-data":      true,
-			"elixir-phoenix":   true,
-			"dotnet-api":       true,
-			"laravel":          true,
-			"go-service":       true,
+			// Tier 1
+			"elixir-phoenix":      true,
+			"typescript-sveltekit": true,
+			"ruby-rails":          true,
+			// Tier 2
+			"typescript-nextjs":   true,
+			"typescript-fastify":  true,
+			"go-service":         true,
+			"dotnet-api":         true,
+			"python-fastapi":     true,
+			"python-django":      true,
+			"dart-flutter":       true,
+			"rust-axum":          true,
+			"laravel":            true,
 		}
 		if !validProfile[selection.ProfileID] {
 			issues = append(issues, "profile_id is not supported by this Launchpad build")
 		}
 	}
 
+	// Profiles that have a frontend surface can use frontend-craft.
+	// All profiles can use data-intensive.
 	allowedAddonsByProfile := map[string]map[string]bool{
-		"typescript-react": {
-			"frontend-craft": true,
-			"data-intensive": true,
-		},
-		"elixir-phoenix": {
-			"frontend-craft": true,
-			"data-intensive": true,
-		},
-		"laravel": {
-			"frontend-craft": true,
-			"data-intensive": true,
-		},
-		"python-data": {
-			"data-intensive": true,
-		},
-		"dotnet-api": {
-			"data-intensive": true,
-		},
-		"go-service": {
-			"data-intensive": true,
-		},
+		"elixir-phoenix":      {"frontend-craft": true, "data-intensive": true},
+		"typescript-sveltekit": {"frontend-craft": true, "data-intensive": true},
+		"ruby-rails":          {"frontend-craft": true, "data-intensive": true},
+		"typescript-nextjs":   {"frontend-craft": true, "data-intensive": true},
+		"typescript-fastify":  {"data-intensive": true},
+		"go-service":          {"data-intensive": true},
+		"dotnet-api":          {"data-intensive": true},
+		"python-fastapi":      {"data-intensive": true},
+		"python-django":       {"frontend-craft": true, "data-intensive": true},
+		"dart-flutter":        {"frontend-craft": true},
+		"rust-axum":           {"data-intensive": true},
+		"laravel":             {"frontend-craft": true, "data-intensive": true},
 	}
 
 	seenAddons := map[string]bool{}
@@ -64,7 +65,7 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 	}
 
 	seenAssets := map[string]bool{}
-	var paletteCount, fontCount, lintCount, testingCount, frameworkOpinionCount int
+	var paletteCount, fontCount, lintCount, testingCount int
 	for _, assetID := range selection.AssetIDs {
 		if assetID == "" {
 			continue
@@ -84,8 +85,6 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 			lintCount++
 		case strings.HasPrefix(assetID, "asset.testing."):
 			testingCount++
-		case strings.HasPrefix(assetID, "asset.framework."):
-			frameworkOpinionCount++
 		}
 	}
 
@@ -100,9 +99,6 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 	}
 	if testingCount > 1 {
 		issues = append(issues, "only one testing asset may be selected")
-	}
-	if frameworkOpinionCount > 1 {
-		issues = append(issues, "only one framework-opinion asset may be selected")
 	}
 
 	return issues
