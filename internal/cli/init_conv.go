@@ -118,7 +118,13 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Println(ui.DimStyle.Render("Describe your project and I'll help you pick the right stack and standards."))
 	fmt.Println()
 
-	engine := ai.NewEngine(apiKey, nil)
+	// Build LLM provider — model is configurable via LAUNCHPAD_MODEL env var.
+	var providerOpts []ai.OpenAIOption
+	if model := os.Getenv("LAUNCHPAD_MODEL"); model != "" {
+		providerOpts = append(providerOpts, ai.WithModel(model))
+	}
+	provider := ai.NewOpenAIProvider(apiKey, providerOpts...)
+	engine := ai.NewEngine(provider)
 
 	ctx := context.Background()
 	reader := bufio.NewReader(os.Stdin)
@@ -263,6 +269,7 @@ func printLaunchpadReply(reply string) {
 }
 
 // loadKeyFromDotEnv reads OPENAI_API_KEY or KEY from a .env file in the current directory.
+// Handles common formats: quoted values, `export` prefix, inline comments.
 func loadKeyFromDotEnv() string {
 	data, err := os.ReadFile(".env")
 	if err != nil {
@@ -273,12 +280,25 @@ func loadKeyFromDotEnv() string {
 		if strings.HasPrefix(line, "#") || line == "" {
 			continue
 		}
+		// Strip optional `export ` prefix
+		line = strings.TrimPrefix(line, "export ")
 		key, val, ok := strings.Cut(line, "=")
 		if !ok {
 			continue
 		}
 		key = strings.TrimSpace(key)
 		val = strings.TrimSpace(val)
+		// Strip surrounding quotes (single or double)
+		if len(val) >= 2 {
+			if (val[0] == '"' && val[len(val)-1] == '"') ||
+				(val[0] == '\'' && val[len(val)-1] == '\'') {
+				val = val[1 : len(val)-1]
+			}
+		}
+		// Strip inline comments (only after unquoted values)
+		if ci := strings.Index(val, " #"); ci != -1 {
+			val = strings.TrimSpace(val[:ci])
+		}
 		if key == "OPENAI_API_KEY" || key == "KEY" {
 			return val
 		}

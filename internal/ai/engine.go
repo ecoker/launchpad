@@ -1,17 +1,13 @@
 package ai
 
 import (
-"bytes"
-"context"
-"encoding/json"
-"fmt"
-"io"
-"net/http"
-"sort"
-"strings"
-"time"
+	"context"
+	"encoding/json"
+	"fmt"
+	"sort"
+	"strings"
 
-"github.com/ehrencoker/agent-kit/templates"
+	"github.com/ehrencoker/agent-kit/templates"
 )
 
 // FileOutput represents a single file the AI wants to create.
@@ -29,45 +25,35 @@ type Selection struct {
 	Rationale  string   `json:"rationale"`
 }
 
+// confidenceThreshold is the minimum self-reported confidence the model must
+// return for us to proceed with generation. This is a soft heuristic — LLM
+// confidence scores are uncalibrated — but in practice it catches cases where
+// the conversation was too vague to produce a useful selection. Tuned through
+// manual testing; not a statistical guarantee.
 const confidenceThreshold = 0.72
 
 // ReadyToken is the phrase the model appends to signal readiness.
 const ReadyToken = "READY_TO_GENERATE"
 
-// Engine manages the OpenAI Responses API thread.
+// Engine orchestrates the multi-turn conversation and generation workflow.
+// It delegates all LLM communication to a Provider implementation.
 type Engine struct {
-	apiKey             string
-	httpClient         *http.Client
-	model              string
-	previousResponseID string
-	onChunk            func(string)
+	provider Provider
 }
 
-// NewEngine creates a new Engine.
-func NewEngine(apiKey string, onChunk func(string)) *Engine {
-	return &Engine{
-		apiKey:     strings.TrimSpace(apiKey),
-		httpClient: &http.Client{Timeout: 120 * time.Second},
-		model:      "gpt-4.1",
-		onChunk:    onChunk,
-	}
+// NewEngine creates a new Engine backed by the given Provider.
+func NewEngine(provider Provider) *Engine {
+	return &Engine{provider: provider}
 }
 
-// Chat sends a user message on the persistent Responses API thread.
-// The system prompt is injected only on the first call.
+// Chat sends a user message and returns the assistant's reply.
 func (e *Engine) Chat(ctx context.Context, message string) (string, error) {
 	if strings.TrimSpace(message) == "" {
 		return "", fmt.Errorf("empty message")
 	}
 	// Always send instructions — the Responses API does NOT carry them
 	// across previous_response_id chains.
-	systemPrompt := conversationSystemPrompt()
-	raw, id, err := e.call(ctx, message, systemPrompt, true)
-	if err != nil {
-		return "", err
-	}
-	e.previousResponseID = id
-	return raw, nil
+	return e.provider.Send(ctx, message, conversationSystemPrompt())
 }
 
 // IsReady reports whether the assistant reply contains the readiness token.
@@ -93,11 +79,10 @@ func (e *Engine) ExtractDecision(ctx context.Context) (*Selection, error) {
 		"}\n\n" +
 		"Asset IDs available:\n" + catalogIDLines()
 
-	raw, id, err := e.call(ctx, extractPrompt, "", false)
+	raw, err := e.provider.Send(ctx, extractPrompt, "")
 	if err != nil {
 		return nil, err
 	}
-	e.previousResponseID = id
 	return parseSelection(raw)
 }
 
@@ -108,9 +93,9 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 	}
 	if sel.Confidence < confidenceThreshold {
 		return nil, fmt.Errorf(
-"confidence %.2f is below minimum %.2f — try describing your project in more detail",
-sel.Confidence, confidenceThreshold,
-)
+			"confidence %.2f is below minimum %.2f — try describing your project in more detail",
+			sel.Confidence, confidenceThreshold,
+		)
 	}
 	if issues := ValidateSelectionCompatibility(*sel); len(issues) > 0 {
 		return nil, fmt.Errorf("incompatible selection: %s", strings.Join(issues, "; "))
@@ -139,39 +124,92 @@ sel.Confidence, confidenceThreshold,
 	// Pull scaffold command from the profile registry
 	scaffoldInfo := scaffoldCommandForProfile(sel.ProfileID)
 
+	// Check which design-related assets are in the selection so we can
+	// give the model explicit synthesis instructions.
+	hasDesignSystem := false
+	hasPalette := false
+	hasFonts := false
+	hasFrontendCraft := false
+	for _, a := range assets {
+		switch {
+		case a.ID == "core.design-system":
+			hasDesignSystem = true
+		case strings.HasPrefix(a.ID, "asset.palette."):
+			hasPalette = true
+		case strings.HasPrefix(a.ID, "asset.fonts."):
+			hasFonts = true
+		case a.ID == "addon.frontend-craft":
+			hasFrontendCraft = true
+		}
+	}
+
+	var designGuidance strings.Builder
+	if hasDesignSystem || hasPalette || hasFonts || hasFrontendCraft {
+		designGuidance.WriteString("DESIGN SYSTEM SYNTHESIS:\n")
+		designGuidance.WriteString("The assets below include visual identity guidance. When generating output files:\n")
+		designGuidance.WriteString("- Merge the design-system baseline with any selected palette/font assets into\n")
+		designGuidance.WriteString("  a single cohesive visual language. Don't repeat conflicting defaults.\n")
+		if hasPalette {
+			designGuidance.WriteString("- A palette asset is included. Use its specific color tokens as the concrete\n")
+			designGuidance.WriteString("  values for the design-system's color guidance. The palette overrides generic\n")
+			designGuidance.WriteString("  color suggestions in the baseline.\n")
+		}
+		if hasFonts {
+			designGuidance.WriteString("- A font pairing asset is included. Use its specific fonts as the concrete\n")
+			designGuidance.WriteString("  values for the design-system's typography guidance.\n")
+		}
+		if hasFrontendCraft {
+			designGuidance.WriteString("- The frontend-craft addon is included. Its principles are framework-agnostic.\n")
+			designGuidance.WriteString("  When generating instruction files, adapt ALL examples, component patterns,\n")
+			designGuidance.WriteString("  animation techniques, and styling approaches to the selected framework's\n")
+			designGuidance.WriteString("  idioms (e.g. LiveView function components for Phoenix, Svelte components\n")
+			designGuidance.WriteString("  for SvelteKit, ViewComponent for Rails, Blade for Laravel, widgets for\n")
+			designGuidance.WriteString("  Flutter). Do NOT emit React/JSX examples for non-React stacks.\n")
+		}
+		designGuidance.WriteString("- Generate a dedicated design-system.instructions.md that synthesizes the\n")
+		designGuidance.WriteString("  baseline + palette + fonts into framework-appropriate tokens and setup.\n")
+		designGuidance.WriteString("  The applyTo glob MUST match the selected framework's template/style files.\n\n")
+	}
+
 	prompt := fmt.Sprintf(
-"Generate AI instruction files for the project %q.\n\n"+
-"Selected: profile=%s | addons=%s | assets=%s\n\n"+
-"IMPORTANT — SCAFFOLD COMMAND:\n"+
-"The framework provides its own CLI scaffold command. The start.prompt.md MUST\n"+
-"use this command as step 1 instead of manually creating project boilerplate:\n"+
-"%s\n\n"+
-"The AI agent should NEVER generate framework boilerplate files (package.json,\n"+
-"mix.exs, Gemfile, etc.). The scaffold command handles all of that. The agent's\n"+
-"job is to write application code AFTER the scaffold is complete.\n\n"+
-"Use ONLY the asset content below as your source. Do not invent conventions.\n\n"+
-"%s\n"+
-"Output ONLY file blocks — no prose before or after:\n"+
-"===FILE: relative/path===\n(content)\n===END_FILE===\n\n"+
-"Required:\n"+
-"1. .github/copilot-instructions.md — always-on standards from core + profile assets\n"+
-"2. .github/instructions/*.instructions.md — one per concern, YAML frontmatter applyTo glob required\n"+
-"3. AGENTS.md — multi-agent ground rules\n"+
-"4. .github/prompts/start.prompt.md — YAML frontmatter with description, agent: \"agent\", tools list.\n"+
-"   Body MUST:\n"+
-"   a) Run the framework scaffold command first: %s\n"+
-"   b) Then proceed with application-specific implementation\n"+
-"   c) Never manually create files the scaffold already provides\n",
-projectName,
-sel.ProfileID,
-strings.Join(sel.AddonIDs, ", "),
-strings.Join(summary, ", "),
-scaffoldInfo,
-contextBlocks.String(),
-scaffoldInfo,
+		"Generate AI instruction files for the project %q.\n\n"+
+			"Selected: profile=%s | addons=%s | assets=%s\n\n"+
+			"IMPORTANT — SCAFFOLD COMMAND:\n"+
+			"The framework provides its own CLI scaffold command. The start.prompt.md MUST\n"+
+			"use this command as step 1 instead of manually creating project boilerplate:\n"+
+			"%s\n\n"+
+			"The AI agent should NEVER generate framework boilerplate files (package.json,\n"+
+			"mix.exs, Gemfile, etc.). The scaffold command handles all of that. The agent's\n"+
+			"job is to write application code AFTER the scaffold is complete.\n\n"+
+			"%s"+
+			"ADAPTATION RULE:\n"+
+			"All generated instruction files MUST use the selected framework's idioms.\n"+
+			"Code examples, component patterns, styling approaches, and file globs must\n"+
+			"match the framework. Do NOT emit patterns from a different ecosystem.\n\n"+
+			"Use ONLY the asset content below as your source. Do not invent conventions.\n\n"+
+			"%s\n"+
+			"Output ONLY file blocks — no prose before or after:\n"+
+			"===FILE: relative/path===\n(content)\n===END_FILE===\n\n"+
+			"Required:\n"+
+			"1. .github/copilot-instructions.md — always-on standards from core + profile assets\n"+
+			"2. .github/instructions/*.instructions.md — one per concern, YAML frontmatter applyTo glob required\n"+
+			"3. AGENTS.md — multi-agent ground rules\n"+
+			"4. .github/prompts/start.prompt.md — YAML frontmatter with description, agent: \"agent\", tools list.\n"+
+			"   Body MUST:\n"+
+			"   a) Run the framework scaffold command first: %s\n"+
+			"   b) Then proceed with application-specific implementation\n"+
+			"   c) Never manually create files the scaffold already provides\n",
+		projectName,
+		sel.ProfileID,
+		strings.Join(sel.AddonIDs, ", "),
+		strings.Join(summary, ", "),
+		scaffoldInfo,
+		designGuidance.String(),
+		contextBlocks.String(),
+		scaffoldInfo,
 	)
 
-	raw, _, err := e.call(ctx, prompt, "", false)
+	raw, err := e.provider.Send(ctx, prompt, "")
 	if err != nil {
 		return nil, err
 	}
@@ -182,106 +220,18 @@ scaffoldInfo,
 	return files, nil
 }
 
-// call makes a single Responses API request. systemPrompt is sent only when non-empty.
-func (e *Engine) call(ctx context.Context, input, systemPrompt string, stream bool) (string, string, error) {
-	type reqBody struct {
-		Model              string `json:"model"`
-		Instructions       string `json:"instructions,omitempty"`
-		PreviousResponseID string `json:"previous_response_id,omitempty"`
-		Input              string `json:"input"`
-	}
-	body := reqBody{
-		Model:              e.model,
-		Input:              input,
-		PreviousResponseID: e.previousResponseID,
-		Instructions:       systemPrompt,
-	}
-	payload, err := json.Marshal(body)
-	if err != nil {
-		return "", "", fmt.Errorf("marshal: %w", err)
-	}
-
-	for attempt := 1; attempt <= 3; attempt++ {
-		req, reqErr := http.NewRequestWithContext(
-ctx, http.MethodPost,
-"https://api.openai.com/v1/responses",
-bytes.NewReader(payload),
-)
-		if reqErr != nil {
-			return "", "", fmt.Errorf("build request: %w", reqErr)
-		}
-		req.Header.Set("Authorization", "Bearer "+e.apiKey)
-		req.Header.Set("Content-Type", "application/json")
-
-		res, doErr := e.httpClient.Do(req)
-		if doErr != nil {
-			return "", "", fmt.Errorf("http: %w", doErr)
-		}
-		respBytes, readErr := io.ReadAll(res.Body)
-		res.Body.Close()
-		if readErr != nil {
-			return "", "", fmt.Errorf("read body: %w", readErr)
-		}
-
-		if res.StatusCode == http.StatusTooManyRequests {
-			time.Sleep(time.Duration(attempt) * 2 * time.Second)
-			continue
-		}
-		if res.StatusCode < 200 || res.StatusCode >= 300 {
-			return "", "", fmt.Errorf("api %d: %s", res.StatusCode, strings.TrimSpace(string(respBytes)))
-		}
-
-		var out responsesAPIResponse
-		if jsonErr := json.Unmarshal(respBytes, &out); jsonErr != nil {
-			return "", "", fmt.Errorf("decode: %w", jsonErr)
-		}
-		text := out.text()
-		if text == "" {
-			return "", "", fmt.Errorf("empty response from api")
-		}
-		if stream && e.onChunk != nil {
-			e.onChunk(text)
-		}
-		return text, out.ID, nil
-	}
-	return "", "", fmt.Errorf("rate limit exceeded after retries")
-}
-
-type responsesAPIResponse struct {
-	ID     string `json:"id"`
-	Output []struct {
-		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-		} `json:"content"`
-	} `json:"output"`
-	OutputText string `json:"output_text"`
-}
-
-func (r responsesAPIResponse) text() string {
-	if t := strings.TrimSpace(r.OutputText); t != "" {
-		return t
-	}
-	var sb strings.Builder
-	for _, o := range r.Output {
-		for _, c := range o.Content {
-			if t := strings.TrimSpace(c.Text); t != "" {
-				if sb.Len() > 0 {
-					sb.WriteByte('\n')
-				}
-				sb.WriteString(t)
-			}
-		}
-	}
-	return strings.TrimSpace(sb.String())
+// ParseSelection parses raw LLM JSON output into a normalized Selection.
+// Exported for testing.
+func ParseSelection(raw string) (*Selection, error) {
+	return parseSelection(raw)
 }
 
 func parseSelection(raw string) (*Selection, error) {
 	clean := strings.TrimSpace(raw)
 	clean = strings.TrimPrefix(clean, "```json")
-clean = strings.TrimPrefix(clean, "```")
+	clean = strings.TrimPrefix(clean, "```")
 	clean = strings.TrimSuffix(clean, "```")
-clean = strings.TrimSpace(clean)
+	clean = strings.TrimSpace(clean)
 	if i := strings.Index(clean, "{"); i != -1 {
 		if j := strings.LastIndex(clean, "}"); j > i {
 			clean = clean[i : j+1]
@@ -290,7 +240,7 @@ clean = strings.TrimSpace(clean)
 	var sel Selection
 	if err := json.Unmarshal([]byte(clean), &sel); err != nil {
 		return nil, fmt.Errorf("parse selection: %w\nraw output: %s", err, raw)
-}
+	}
 	sel.ProfileID = strings.TrimPrefix(strings.TrimSpace(sel.ProfileID), "profile.")
 
 	normalizedAddons := make([]string, 0, len(sel.AddonIDs))
@@ -317,39 +267,45 @@ clean = strings.TrimSpace(clean)
 	}
 	sel.AssetIDs = normalizedAssets
 
-return &sel, nil
+	return &sel, nil
+}
+
+// ParseFileOutput parses raw LLM output containing ===FILE: blocks.
+// Exported for testing.
+func ParseFileOutput(raw string) []FileOutput {
+	return parseFileOutput(raw)
 }
 
 func parseFileOutput(raw string) []FileOutput {
-var files []FileOutput
-remaining := raw
-for {
-const startMark = "===FILE: "
-si := strings.Index(remaining, startMark)
-if si == -1 {
-break
-}
-after := remaining[si+len(startMark):]
-ep := strings.Index(after, "===")
-if ep == -1 {
-break
-}
-path := strings.TrimSpace(after[:ep])
-cs := si + len(startMark) + ep + 3
-const endMark = "===END_FILE==="
-ei := strings.Index(remaining[cs:], endMark)
-if ei == -1 {
-break
-}
-content := strings.TrimSpace(remaining[cs : cs+ei])
-files = append(files, FileOutput{Path: path, Content: content})
-remaining = remaining[cs+ei+len(endMark):]
-}
-return files
+	var files []FileOutput
+	remaining := raw
+	for {
+		const startMark = "===FILE: "
+		si := strings.Index(remaining, startMark)
+		if si == -1 {
+			break
+		}
+		after := remaining[si+len(startMark):]
+		ep := strings.Index(after, "===")
+		if ep == -1 {
+			break
+		}
+		path := strings.TrimSpace(after[:ep])
+		cs := si + len(startMark) + ep + 3
+		const endMark = "===END_FILE==="
+		ei := strings.Index(remaining[cs:], endMark)
+		if ei == -1 {
+			break
+		}
+		content := strings.TrimSpace(remaining[cs : cs+ei])
+		files = append(files, FileOutput{Path: path, Content: content})
+		remaining = remaining[cs+ei+len(endMark):]
+	}
+	return files
 }
 
 func catalogIDLines() string {
-return strings.Join(catalogSummaryLines(), "\n")
+	return strings.Join(catalogSummaryLines(), "\n")
 }
 
 func conversationSystemPrompt() string {
@@ -379,7 +335,12 @@ func conversationSystemPrompt() string {
 
 	// PHASE 2
 	sb.WriteString("PHASE 2 — OPTIONS (exactly 1 turn):\n")
-	sb.WriteString("Present 2-3 stack options from the catalog. For each: name, one sentence why it fits, and the scaffold command. Mark your top pick with ★. Ask which they want.\n\n")
+	sb.WriteString("Present 2-3 stack options from the catalog. For each: name, one sentence why it fits, and the scaffold command. Mark your top pick with ★.\n")
+	sb.WriteString("After presenting stacks, briefly mention relevant add-ons and design assets.\n")
+	sb.WriteString("For stacks with a UI surface (Phoenix, SvelteKit, Rails, Next.js, Django, Laravel, Flutter, React), suggest the frontend-craft add-on for visual discipline and accessibility guidance.\n")
+	sb.WriteString("For data-heavy projects, suggest the data-intensive add-on.\n")
+	sb.WriteString("Mention palette and font options if the project has a frontend. Keep it to 1-2 sentences — don't overwhelm.\n")
+	sb.WriteString("Ask which stack (and optionally which add-ons/assets) they want.\n\n")
 
 	// PHASE 3
 	sb.WriteString("PHASE 3 — COMMIT (exactly 1 turn):\n")
@@ -412,18 +373,18 @@ func conversationSystemPrompt() string {
 // scaffoldCommandForProfile returns the CLI scaffold command for a given profile ID.
 func scaffoldCommandForProfile(profileID string) string {
 	commands := map[string]string{
-		"elixir-phoenix":      "mix phx.new {{name}}",
+		"elixir-phoenix":       "mix phx.new {{name}}",
 		"typescript-sveltekit": "npm create svelte@latest",
-		"ruby-rails":          "rails new {{name}}",
-		"typescript-nextjs":   "npx create-next-app@latest",
-		"typescript-fastify":  "npm init -y && npm install fastify",
-		"go-service":          "go mod init {{module}}",
-		"dotnet-api":          "dotnet new webapi -n {{name}}",
-		"python-fastapi":      "mkdir {{name}} && cd {{name}} && python -m venv .venv && pip install fastapi uvicorn",
-		"python-django":       "django-admin startproject {{name}}",
-		"dart-flutter":        "flutter create {{name}}",
-		"rust-axum":           "cargo new {{name}}",
-		"laravel":             "composer create-project laravel/laravel {{name}}",
+		"ruby-rails":           "rails new {{name}}",
+		"typescript-nextjs":    "npx create-next-app@latest",
+		"typescript-fastify":   "npm init -y && npm install fastify",
+		"go-service":           "go mod init {{module}}",
+		"dotnet-api":           "dotnet new webapi -n {{name}}",
+		"python-fastapi":       "mkdir {{name}} && cd {{name}} && python -m venv .venv && pip install fastapi uvicorn",
+		"python-django":        "django-admin startproject {{name}}",
+		"dart-flutter":         "flutter create {{name}}",
+		"rust-axum":            "cargo new {{name}}",
+		"laravel":              "composer create-project laravel/laravel {{name}}",
 	}
 	if cmd, ok := commands[profileID]; ok {
 		return cmd

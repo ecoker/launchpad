@@ -46,6 +46,9 @@ go install github.com/ehrencoker/agent-kit/cmd/launchpad@latest
 # Set your OpenAI API key
 export OPENAI_API_KEY="sk-..."
 
+# Optionally override the model (default: gpt-4.1)
+export LAUNCHPAD_MODEL="gpt-4.1-mini"
+
 # Start a conversation to generate instructions
 launchpad init ./my-app
 
@@ -63,11 +66,13 @@ These inform the tone, depth, and structure of what gets generated — but every
 output is customized to your conversation.
 
 The system is **use-case driven**, not language-driven. Tell Launchpad what
-you're building and it recommends the best framework for AI-assisted
-development — not what's popular, but what gives you the best chance of
-shipping.
+you're building and it recommends a framework based on how well AI agents can
+work with it — convention density, context coherence, and scaffold quality.
+These are opinionated rankings, not benchmarks. Disagree? Pick a different
+option in the conversation; every supported stack gets the same generation
+quality.
 
-### Recommended stacks (best for AI)
+### Opinionated picks (author favorites for AI pairing)
 
 | Stack | Best for | Scaffold |
 |-------|----------|----------|
@@ -76,6 +81,9 @@ shipping.
 | Ruby on Rails | CRUD apps, MVPs, admin panels | `rails new` |
 
 ### All supported stacks
+
+Every stack below gets full instruction generation — profiles, addons, and
+assets. The picks above reflect the author's experience, not objective truth.
 
 | Stack | Use case | Scaffold |
 |-------|----------|----------|
@@ -120,4 +128,5 @@ context when generating custom instructions.
 ## Requirements
 
 - An OpenAI API key (`OPENAI_API_KEY` env var or entered interactively)
+- Optionally `LAUNCHPAD_MODEL` to use a different OpenAI model
 - That's it

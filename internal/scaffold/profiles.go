@@ -21,14 +21,13 @@ type Addon struct {
 
 // Profiles lists every available profile, ordered by recommendation strength.
 //
-// Tier 1 — Strongly recommended for AI-assisted development.
-// These frameworks give AI agents the most complete context and produce
-// the best results with the least manual intervention.
+// Tier 1 — Author's opinionated picks for AI-assisted development.
+// These frameworks tend to give AI agents coherent, convention-rich context
+// that produces good results with less manual correction. Your mileage may vary.
 //
-// Tier 2 — Good for specific use cases where the domain or ecosystem
-// justifies the tradeoff.
+// Tier 2 — Strong choices for specific domains or ecosystem requirements.
 var Profiles = []Profile{
-	// ── Tier 1: Best AI-to-developer handoff ──────────────────────────
+	// ── Tier 1: Author's opinionated picks ──────────────────────────
 
 	{
 		ID:          "elixir-phoenix",
@@ -154,7 +153,7 @@ var Addons = []Addon{
 	{
 		ID:      "frontend-craft",
 		Title:   "Frontend Craft",
-		Summary: "Advanced CSS, animation, accessibility, responsive design",
+		Summary: "Visual discipline, component composition, accessibility, and motion — framework agnostic",
 		Dir:     "frontend-craft",
 	},
 }

@@ -74,18 +74,35 @@ these principles always apply.
 
 ## Framework-specific notes
 
-These principles apply regardless of framework, but the implementation varies:
+These principles apply regardless of framework, but the implementation varies.
+**Tailwind CSS is the default styling system for all web frameworks** — define
+theme tokens in `tailwind.config` and use utility classes everywhere. Don't
+scatter hex values or raw spacing numbers across templates.
 
-- **Tailwind CSS**: define theme tokens in `tailwind.config` and use utility
-  classes. Don't scatter hex values across components.
-- **Phoenix/LiveView**: set CSS custom properties in the root layout. Use
-  Tailwind or a similar utility system.
-- **Rails**: configure Tailwind or define CSS custom properties in
-  `application.css`. Use the asset pipeline.
-- **Flutter**: define `ThemeData` with the palette tokens. Use `ColorScheme`
-  for semantic color mapping.
-- **SvelteKit**: define CSS custom properties in the root layout or use
-  Tailwind config.
+- **Phoenix/LiveView**: Tailwind ships with `mix phx.new`. Define theme tokens
+  in `tailwind.config.js` and set CSS custom properties in the root layout for
+  any non-Tailwind contexts (JS hooks, third-party widgets).
+- **Rails**: Tailwind is a first-class default via `tailwindcss-rails`. Define
+  tokens in `tailwind.config.js`. Use the asset pipeline.
+- **SvelteKit**: Tailwind via `@sveltejs/adapter` or PostCSS. Define tokens in
+  `tailwind.config.js`. Svelte scoped styles can supplement but shouldn't
+  replace Tailwind for layout and spacing.
+- **Next.js / React**: Tailwind is the default. Configure in `tailwind.config`.
+  Use `cn()` utility for conditional class merging.
+- **Django**: Tailwind via `django-tailwind` or manual PostCSS setup. Define
+  tokens in `tailwind.config.js`. Reference in templates.
+- **Laravel**: Tailwind ships with Vite + Laravel. Define tokens in config.
+  Blade components and Livewire components use Tailwind utilities.
+- **Flutter**: no CSS. Define `ThemeData` with palette tokens. Use `ColorScheme`
+  for semantic color mapping. `ThemeExtension` for custom tokens.
+
+## Override behavior
+
+This file provides **defaults**. If a specific palette asset is selected, its
+color tokens replace the generic color guidance above. If a font asset is
+selected, its font families replace the generic typography defaults. The
+principles (dark-first, restrained color, consistent spacing) always apply —
+only the concrete values change.
 
 ## The test
 

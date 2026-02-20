@@ -11,12 +11,12 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 	} else {
 		validProfile := map[string]bool{
 			// Tier 1
-			"elixir-phoenix":      true,
+			"elixir-phoenix":       true,
 			"typescript-sveltekit": true,
-			"ruby-rails":          true,
+			"ruby-rails":           true,
 			// Tier 2
-			"typescript-nextjs":   true,
-			"typescript-fastify":  true,
+			"typescript-nextjs":  true,
+			"typescript-fastify": true,
 			"go-service":         true,
 			"dotnet-api":         true,
 			"python-fastapi":     true,
@@ -33,18 +33,18 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 	// Profiles that have a frontend surface can use frontend-craft.
 	// All profiles can use data-intensive.
 	allowedAddonsByProfile := map[string]map[string]bool{
-		"elixir-phoenix":      {"frontend-craft": true, "data-intensive": true},
+		"elixir-phoenix":       {"frontend-craft": true, "data-intensive": true},
 		"typescript-sveltekit": {"frontend-craft": true, "data-intensive": true},
-		"ruby-rails":          {"frontend-craft": true, "data-intensive": true},
-		"typescript-nextjs":   {"frontend-craft": true, "data-intensive": true},
-		"typescript-fastify":  {"data-intensive": true},
-		"go-service":          {"data-intensive": true},
-		"dotnet-api":          {"data-intensive": true},
-		"python-fastapi":      {"data-intensive": true},
-		"python-django":       {"frontend-craft": true, "data-intensive": true},
-		"dart-flutter":        {"frontend-craft": true},
-		"rust-axum":           {"data-intensive": true},
-		"laravel":             {"frontend-craft": true, "data-intensive": true},
+		"ruby-rails":           {"frontend-craft": true, "data-intensive": true},
+		"typescript-nextjs":    {"frontend-craft": true, "data-intensive": true},
+		"typescript-fastify":   {"data-intensive": true},
+		"go-service":           {"data-intensive": true},
+		"dotnet-api":           {"data-intensive": true},
+		"python-fastapi":       {"data-intensive": true},
+		"python-django":        {"frontend-craft": true, "data-intensive": true},
+		"dart-flutter":         {"frontend-craft": true},
+		"rust-axum":            {"data-intensive": true},
+		"laravel":              {"frontend-craft": true, "data-intensive": true},
 	}
 
 	seenAddons := map[string]bool{}

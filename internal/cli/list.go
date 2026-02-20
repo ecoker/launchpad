@@ -20,7 +20,7 @@ var listCmd = &cobra.Command{
 		fmt.Println(ui.DimStyle.Render("  then generates instructions from the selected subset."))
 		fmt.Println()
 
-		fmt.Println(ui.Heading.Render("  ★ Recommended stacks (best for AI-assisted development):"))
+		fmt.Println(ui.Heading.Render("  ★ Opinionated picks (author favorites for AI pairing):"))
 		for _, p := range scaffold.Profiles {
 			if p.Tier != 1 {
 				continue

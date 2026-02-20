@@ -7,4 +7,8 @@
 - Avoid introducing more than two primary font families in starter scaffolds
 
 ## Application Rule
-Set shared font tokens early (e.g. CSS variables or theme config) and reference those tokens everywhere.
+For web frameworks, define font families in `tailwind.config` under `theme.fontFamily`
+(e.g. `sans: ['Inter', ...systemSans]`, `mono: ['JetBrains Mono', ...systemMono]`). Also
+set CSS custom properties (`--font-sans`, `--font-mono`) on `:root` for non-Tailwind contexts.
+For Flutter, set `fontFamily` in `ThemeData` and reference via `Theme.of(context)`. Never
+use raw font-family strings in component code.

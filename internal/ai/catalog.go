@@ -43,11 +43,11 @@ func catalog() []ContextAsset {
 			ID:           "core.design-system",
 			Category:     "design",
 			Label:        "Design System Baseline",
-			Summary:      "Dark-first visual identity, typography, spacing, and component DNA — ensures cohesion across all generated apps",
+			Summary:      "Dark-first visual identity, typography, spacing, and component DNA — the visual foundation that all generated apps share",
 			TemplatePath: "core/.github/instructions/design-system.instructions.md",
 		},
 
-		// ── Tier 1 Profiles (strongly recommended) ───────────────────
+		// ── Tier 1 Profiles (author's opinionated picks) ────────────
 		{
 			ID:           "profile.elixir-phoenix",
 			Category:     "framework",
@@ -147,7 +147,7 @@ func catalog() []ContextAsset {
 			ID:           "addon.frontend-craft",
 			Category:     "ui",
 			Label:        "Frontend Craft Add-on",
-			Summary:      "Visual quality, accessibility, and interaction craftsmanship conventions",
+			Summary:      "Framework-agnostic visual discipline, component composition, accessibility, motion, and styling system guidance",
 			TemplatePath: "addons/frontend-craft/.github/instructions/frontend-craft.instructions.md",
 		},
 

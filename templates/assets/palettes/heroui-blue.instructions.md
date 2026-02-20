@@ -17,4 +17,7 @@ Use a semantic color system with predictable 50-900 scales and explicit foregrou
 - Foreground (dark): `#ecedee`
 
 ## Application Rule
-When generating starter files, define color tokens once and consume by semantic name in UI code.
+For web frameworks, define these tokens in `tailwind.config` under `theme.extend.colors`
+using semantic names (`primary`, `success`, `warning`, `danger`). Also set CSS custom
+properties on `:root` for non-Tailwind contexts. For Flutter, define them in `ColorScheme`
+and `ThemeExtension`. Never scatter raw hex values across components.
