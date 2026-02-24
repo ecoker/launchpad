@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/ehrencoker/agent-kit/internal/scaffold"
 )
 
 // ContextAsset is a selectable instruction source defined in this repository.
@@ -134,6 +136,13 @@ func catalog() []ContextAsset {
 			Summary:      "Laravel + Inertia project conventions for product-focused web apps",
 			TemplatePath: "profiles/laravel/.github/instructions/laravel.instructions.md",
 		},
+		{
+			ID:           "profile.java-spring",
+			Category:     "framework",
+			Label:        "Java + Spring Boot",
+			Summary:      "Enterprise Java with DI, auto-configuration, and structured service architecture",
+			TemplatePath: "profiles/java-spring/.github/instructions/java-spring.instructions.md",
+		},
 
 		// ── Add-ons ──────────────────────────────────────────────────
 		{
@@ -232,6 +241,35 @@ func resolveContextAssets(selection Selection) ([]ContextAsset, error) {
 		resolvedIDs = append(resolvedIDs, id)
 	}
 	resolvedIDs = append(resolvedIDs, selection.AssetIDs...)
+
+	// Auto-include frontend-craft, default palette, and default font for
+	// profiles that have a UI surface. This ensures every generated app
+	// with a frontend gets full visual guidance without the user having to
+	// explicitly opt in during the conversation.
+	if profile := scaffold.FindProfile(selection.ProfileID); profile != nil && profile.HasUI {
+		hasFrontendCraft := false
+		hasPalette := false
+		hasFont := false
+		for _, id := range resolvedIDs {
+			switch {
+			case id == "addon.frontend-craft":
+				hasFrontendCraft = true
+			case strings.HasPrefix(id, "asset.palette."):
+				hasPalette = true
+			case strings.HasPrefix(id, "asset.fonts."):
+				hasFont = true
+			}
+		}
+		if !hasFrontendCraft {
+			resolvedIDs = append(resolvedIDs, "addon.frontend-craft")
+		}
+		if !hasPalette {
+			resolvedIDs = append(resolvedIDs, "asset.palette.obsidian-indigo")
+		}
+		if !hasFont {
+			resolvedIDs = append(resolvedIDs, "asset.fonts.inter-jetbrains")
+		}
+	}
 
 	seen := make(map[string]bool)
 	resolved := make([]ContextAsset, 0, len(resolvedIDs))

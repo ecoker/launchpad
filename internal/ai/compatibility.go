@@ -24,6 +24,7 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 			"dart-flutter":       true,
 			"rust-axum":          true,
 			"laravel":            true,
+			"java-spring":        true,
 		}
 		if !validProfile[selection.ProfileID] {
 			issues = append(issues, "profile_id is not supported by this Launchpad build")
@@ -45,6 +46,7 @@ func ValidateSelectionCompatibility(selection Selection) []string {
 		"dart-flutter":         {"frontend-craft": true},
 		"rust-axum":            {"data-intensive": true},
 		"laravel":              {"frontend-craft": true, "data-intensive": true},
+		"java-spring":          {"data-intensive": true},
 	}
 
 	seenAddons := map[string]bool{}

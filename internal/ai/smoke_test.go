@@ -166,3 +166,117 @@ func TestSmokeGenerateFiles(t *testing.T) {
 		}
 	}
 }
+
+// TestSmokeUIAutoInclude verifies that UI stacks with NO explicit addons/assets
+// still get frontend-craft, palette, and font assets auto-included.
+func TestSmokeUIAutoInclude(t *testing.T) {
+	apiKey := loadTestAPIKey(t)
+
+	provider := NewOpenAIProvider(apiKey)
+	engine := NewEngine(provider)
+
+	// Rails with deliberately empty addons/assets — tests auto-include
+	sel := &Selection{
+		ProfileID:  "ruby-rails",
+		AddonIDs:   []string{},
+		AssetIDs:   []string{},
+		Confidence: 0.95,
+		Rationale:  "UI smoke test: Rails with zero addons — testing auto-include of visual assets",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+
+	t.Log("Calling GenerateFiles for Rails with no explicit UI addons...")
+	start := time.Now()
+	files, err := engine.GenerateFiles(ctx, "ui-smoke-test", sel)
+	elapsed := time.Since(start)
+	if err != nil {
+		t.Fatalf("GenerateFiles failed after %s: %v", elapsed, err)
+	}
+
+	t.Logf("Generated %d files in %s", len(files), elapsed)
+
+	// Write to tmp/ui-smoke/
+	outDir := filepath.Join("..", "..", "tmp", "ui-smoke")
+	if err := os.RemoveAll(outDir); err != nil {
+		t.Fatalf("cleaning output dir: %v", err)
+	}
+
+	for _, f := range files {
+		dest := filepath.Join(outDir, f.Path)
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(dest, []byte(f.Content), 0o644); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+		t.Logf("  %s (%d bytes)", f.Path, len(f.Content))
+	}
+
+	// Check for UI signals
+	hasGradient := false
+	hasGlow := false
+	hasPalette := false
+	hasTailwind := false
+	hasFrontendCraft := false
+
+	for _, f := range files {
+		content := strings.ToLower(f.Content)
+		if strings.Contains(content, "gradient") {
+			hasGradient = true
+		}
+		if strings.Contains(content, "glow") {
+			hasGlow = true
+		}
+		if strings.Contains(content, "#6366f1") || strings.Contains(content, "obsidian") || strings.Contains(content, "indigo") {
+			hasPalette = true
+		}
+		if strings.Contains(content, "tailwind") {
+			hasTailwind = true
+		}
+		if strings.Contains(content, "frontend craft") || strings.Contains(content, "visual discipline") ||
+			strings.Contains(content, "component composition") || strings.Contains(content, "accessibility") {
+			hasFrontendCraft = true
+		}
+	}
+
+	if !hasTailwind {
+		t.Error("FAIL: No Tailwind references found in generated output")
+	}
+	if !hasPalette {
+		t.Error("FAIL: No Obsidian/Indigo palette references found — auto-include may not be working")
+	}
+	if !hasFrontendCraft {
+		t.Error("FAIL: No frontend-craft concepts found — auto-include may not be working")
+	}
+
+	// These are nice-to-haves from the enhanced design system
+	if !hasGradient {
+		t.Log("NOTE: No gradient references found (expected from enhanced design system)")
+	}
+	if !hasGlow {
+		t.Log("NOTE: No glow references found (expected from enhanced design system)")
+	}
+
+	// Print design-relevant files for manual inspection
+	for _, f := range files {
+		if strings.Contains(f.Path, "design") || strings.Contains(f.Path, "copilot-instructions") ||
+			strings.Contains(f.Path, "frontend") {
+			fmt.Printf("\n--- %s ---\n", f.Path)
+			lines := strings.Split(f.Content, "\n")
+			limit := 50
+			if len(lines) < limit {
+				limit = len(lines)
+			}
+			for _, line := range lines[:limit] {
+				fmt.Println(line)
+			}
+			if len(lines) > limit {
+				fmt.Printf("... (%d more lines)\n", len(lines)-limit)
+			}
+		}
+	}
+
+	t.Logf("\nOutput written to %s", outDir)
+}

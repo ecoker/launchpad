@@ -66,47 +66,66 @@ These inform the tone, depth, and structure of what gets generated — but every
 output is customized to your conversation.
 
 The system is **use-case driven**, not language-driven. Tell Launchpad what
-you're building and it recommends a framework based on how well AI agents can
-work with it — convention density, context coherence, and scaffold quality.
-These are opinionated rankings, not benchmarks. Disagree? Pick a different
-option in the conversation; every supported stack gets the same generation
-quality.
+you're building and it recommends a framework based on conceptual integrity,
+explicit contracts, and minimal runtime magic — not popularity. Disagree? Pick
+a different option in the conversation; every supported stack gets the same
+generation quality.
 
-### Opinionated picks (author favorites for AI pairing)
+### Canonical stacks (coherence-first philosophy)
 
-| Stack | Best for | Scaffold |
-|-------|----------|----------|
-| Elixir + Phoenix | Real-time web, dashboards, chat, collaboration | `mix phx.new` |
-| TypeScript + SvelteKit | JS full-stack web, SSR, content sites | `npm create svelte@latest` |
-| Ruby on Rails | CRUD apps, MVPs, admin panels | `rails new` |
+These stacks were chosen for conceptual clarity, long-term stability, and
+clean standards across every architectural layer. Each one has a principled
+reason for being here.
 
-### All supported stacks
+| Stack | Layer | Best for | Scaffold |
+|-------|-------|----------|----------|
+| Elixir + Phoenix | Coordination | Real-time web, distributed systems, live data | `mix phx.new` |
+| TypeScript + SvelteKit | Web UI | JS full-stack web, SSR, content sites | `npm create svelte@latest` |
+| Ruby on Rails | Rapid Product | CRUD apps, MVPs, admin panels, SaaS | `rails new` |
+| Go Service | Worker | High-perf APIs, CLIs, infrastructure | `go mod init` |
+| Rust + Axum | Worker | Performance-critical services, systems | `cargo new` |
+| .NET API | Enterprise | Enterprise APIs, C# ecosystem | `dotnet new webapi` |
+| Java + Spring Boot | Enterprise | Large-scale enterprise, JVM ecosystem | `spring init` |
+| Python + FastAPI | AI Boundary | ML backends, data APIs, LLM integration | `python -m venv .venv` |
+| Dart + Flutter | Mobile UI | Cross-platform native apps | `flutter create` |
 
-Every stack below gets full instruction generation — profiles, addons, and
-assets. The picks above reflect the author's experience, not objective truth.
+### Additional supported stacks
 
-| Stack | Use case | Scaffold |
-|-------|----------|----------|
-| TypeScript + Next.js | React ecosystem, Vercel deployment | `npx create-next-app@latest` |
-| TypeScript + Fastify | Node.js API services | `npm init -y` |
-| Go Service | High-perf APIs, CLIs, infrastructure | `go mod init` |
-| .NET API | Enterprise APIs, C# ecosystem | `dotnet new webapi` |
-| Python + FastAPI | ML backends, data APIs | `python -m venv .venv` |
-| Python + Django | Python full-stack, admin-heavy | `django-admin startproject` |
-| Dart + Flutter | Mobile, cross-platform native | `flutter create` |
-| Rust + Axum | Performance-critical services | `cargo new` |
-| Laravel | PHP full-stack, SaaS | `composer create-project` |
+| Stack | Layer | Use case | Scaffold |
+|-------|-------|----------|----------|
+| TypeScript + Next.js | Web UI | React ecosystem, Vercel deployment | `npx create-next-app@latest` |
+| TypeScript + Fastify | Worker | Node.js API services | `npm init -y` |
+| Python + Django | Rapid Product | Python full-stack, admin-heavy | `django-admin startproject` |
+| Laravel | Rapid Product | PHP full-stack, SaaS | `composer create-project` |
+
+### Layer taxonomy
+
+Every stack maps to an architectural role:
+
+| Layer | Role | Canonical stacks |
+|-------|------|-----------------|
+| Coordination | Distributed orchestration, real-time, supervision | Phoenix |
+| Worker | High-performance stateless services | Go, Rust |
+| Enterprise | Structured integration, regulated environments | .NET, Spring Boot |
+| AI Boundary | LLM integration, schema-driven data APIs | FastAPI |
+| Web UI | Browser-based product surfaces | SvelteKit |
+| Mobile UI | Cross-platform native experiences | Flutter |
+| Rapid Product | Convention-maximalist fast iteration | Rails |
 
 ### Add-ons
 
 | Add-on | Coverage |
 |--------|----------|
 | Data-intensive | Postgres, NATS, Parquet, event-driven |
-| Frontend craft | CSS architecture, animation, accessibility |
+| Frontend craft | Visual discipline, component composition, accessibility, motion |
+
+**Visual assets are automatic.** Any stack with a UI surface automatically
+gets frontend-craft guidance, a default color palette (Obsidian + Indigo),
+and font pairing (Inter + JetBrains Mono). No opt-in needed.
 
 **Key opinions:**
+- Coherence over popularity — SvelteKit over Next.js, Fastify over Express
 - Real-time → Phoenix, not React + server
-- Node.js API → Fastify, not Express
 - Mobile → Flutter, not React Native
 - Framework CLIs scaffold the project — AI writes app code, not boilerplate
 
@@ -114,6 +133,7 @@ assets. The picks above reflect the author's experience, not objective truth.
 
 Shaped by:
 
+- **Coherence as north star** — conceptual integrity, explicit contracts, minimal magic
 - **Grokking Simplicity** — actions, calculations, data
 - **Clean Code & Clean Architecture** — naming, structure, discipline
 - **Refactoring** — continuous, safe, mechanical improvement

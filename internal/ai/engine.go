@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ehrencoker/agent-kit/internal/scaffold"
 	"github.com/ehrencoker/agent-kit/templates"
 )
 
@@ -71,7 +72,7 @@ func (e *Engine) ExtractDecision(ctx context.Context) (*Selection, error) {
 	extractPrompt := "Based on our conversation, extract the final stack decision.\n\n" +
 		"Return ONLY valid JSON — no markdown, no prose:\n" +
 		"{\n" +
-		"  \"profile_id\": \"<elixir-phoenix|typescript-sveltekit|ruby-rails|typescript-nextjs|typescript-fastify|go-service|dotnet-api|python-fastapi|python-django|dart-flutter|rust-axum|laravel>\",\n" +
+		"  \"profile_id\": \"<elixir-phoenix|typescript-sveltekit|ruby-rails|typescript-nextjs|typescript-fastify|go-service|dotnet-api|java-spring|python-fastapi|python-django|dart-flutter|rust-axum|laravel>\",\n" +
 		"  \"addon_ids\": [],\n" +
 		"  \"asset_ids\": [],\n" +
 		"  \"confidence\": 0.0,\n" +
@@ -194,7 +195,14 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 			"1. .github/copilot-instructions.md — always-on standards from core + profile assets\n"+
 			"2. .github/instructions/*.instructions.md — one per concern, YAML frontmatter applyTo glob required\n"+
 			"3. AGENTS.md — multi-agent ground rules\n"+
-			"4. .github/prompts/start.prompt.md — YAML frontmatter with description, agent: \"agent\", tools list.\n"+
+			"4. .github/prompts/start.prompt.md — YAML frontmatter MUST be exactly:\n"+
+			"   ---\n"+
+			"   description: \"<one-sentence description>\"\n"+
+			"   mode: agent\n"+
+			"   tools: [\"terminal\", \"editFiles\", \"codebase\"]\n"+
+			"   ---\n"+
+			"   Do NOT invent tool names. The only valid tools are: terminal, editFiles,\n"+
+			"   codebase, fetch. Use exactly these identifiers.\n"+
 			"   Body MUST:\n"+
 			"   a) Run the framework scaffold command first: %s\n"+
 			"   b) Then proceed with application-specific implementation\n"+
@@ -337,29 +345,40 @@ func conversationSystemPrompt() string {
 	sb.WriteString("PHASE 2 — OPTIONS (exactly 1 turn):\n")
 	sb.WriteString("Present 2-3 stack options from the catalog. For each: name, one sentence why it fits, and the scaffold command. Mark your top pick with ★.\n")
 	sb.WriteString("After presenting stacks, briefly mention relevant add-ons and design assets.\n")
-	sb.WriteString("For stacks with a UI surface (Phoenix, SvelteKit, Rails, Next.js, Django, Laravel, Flutter, React), suggest the frontend-craft add-on for visual discipline and accessibility guidance.\n")
+	sb.WriteString("Note: for any stack with a UI surface, frontend-craft visual guidance and default palette/font assets are included automatically — no need for the user to opt in. You can mention this as a bonus.\n")
 	sb.WriteString("For data-heavy projects, suggest the data-intensive add-on.\n")
-	sb.WriteString("Mention palette and font options if the project has a frontend. Keep it to 1-2 sentences — don't overwhelm.\n")
 	sb.WriteString("Ask which stack (and optionally which add-ons/assets) they want.\n\n")
 
 	// PHASE 3
 	sb.WriteString("PHASE 3 — COMMIT (exactly 1 turn):\n")
 	sb.WriteString("Confirm their choice in one sentence. Emit READY_TO_GENERATE on its own line.\n\n")
 
-	// DECISION MAP
+	// DECISION MAP — derived from profile metadata
 	sb.WriteString("DECISION MAP (★ = your top pick for that use case):\n")
 	sb.WriteString("real-time/live/presence/chat/voting/collaborative -> ★ elixir-phoenix | typescript-sveltekit\n")
 	sb.WriteString("full-stack JS web/SSR/content -> ★ typescript-sveltekit | typescript-nextjs\n")
 	sb.WriteString("CRUD/MVP/admin/content platform -> ★ ruby-rails | python-django\n")
 	sb.WriteString("React required/Vercel -> typescript-nextjs\n")
 	sb.WriteString("Node.js API/microservice -> typescript-fastify\n")
-	sb.WriteString("high-perf API/CLI/infra -> go-service\n")
+	sb.WriteString("high-perf API/CLI/infra -> ★ go-service | rust-axum\n")
 	sb.WriteString("enterprise API/C# -> dotnet-api\n")
+	sb.WriteString("enterprise API/Java/JVM -> java-spring\n")
 	sb.WriteString("Python API/ML/data -> python-fastapi\n")
 	sb.WriteString("Python full-stack/admin/CMS -> python-django\n")
 	sb.WriteString("native mobile -> dart-flutter\n")
-	sb.WriteString("perf-critical systems -> rust-axum\n")
+	sb.WriteString("perf-critical systems -> ★ rust-axum | go-service\n")
 	sb.WriteString("PHP -> laravel\n\n")
+
+	// LAYER TAXONOMY — helps the model understand architectural roles
+	sb.WriteString("LAYER TAXONOMY (how stacks map to architectural roles):\n")
+	for _, p := range scaffold.Profiles {
+		sb.WriteString(fmt.Sprintf("- %s: layer=%s", p.ID, p.Layer))
+		if p.HasUI {
+			sb.WriteString(" (has UI)")
+		}
+		sb.WriteByte('\n')
+	}
+	sb.WriteByte('\n')
 
 	sb.WriteString("Catalog IDs (for extraction step):\n")
 	for _, line := range catalogSummaryLines() {
@@ -372,22 +391,8 @@ func conversationSystemPrompt() string {
 
 // scaffoldCommandForProfile returns the CLI scaffold command for a given profile ID.
 func scaffoldCommandForProfile(profileID string) string {
-	commands := map[string]string{
-		"elixir-phoenix":       "mix phx.new {{name}}",
-		"typescript-sveltekit": "npm create svelte@latest",
-		"ruby-rails":           "rails new {{name}}",
-		"typescript-nextjs":    "npx create-next-app@latest",
-		"typescript-fastify":   "npm init -y && npm install fastify",
-		"go-service":           "go mod init {{module}}",
-		"dotnet-api":           "dotnet new webapi -n {{name}}",
-		"python-fastapi":       "mkdir {{name}} && cd {{name}} && python -m venv .venv && pip install fastapi uvicorn",
-		"python-django":        "django-admin startproject {{name}}",
-		"dart-flutter":         "flutter create {{name}}",
-		"rust-axum":            "cargo new {{name}}",
-		"laravel":              "composer create-project laravel/laravel {{name}}",
-	}
-	if cmd, ok := commands[profileID]; ok {
-		return cmd
+	if p := scaffold.FindProfile(profileID); p != nil && p.ScaffoldCmd != "" {
+		return p.ScaffoldCmd
 	}
 	return "(no scaffold command defined)"
 }

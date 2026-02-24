@@ -20,24 +20,26 @@ var listCmd = &cobra.Command{
 		fmt.Println(ui.DimStyle.Render("  then generates instructions from the selected subset."))
 		fmt.Println()
 
-		fmt.Println(ui.Heading.Render("  ★ Opinionated picks (author favorites for AI pairing):"))
+		fmt.Println(ui.Heading.Render("  ★ Canonical stacks (coherence-first philosophy):"))
 		for _, p := range scaffold.Profiles {
 			if p.Tier != 1 {
 				continue
 			}
-			fmt.Printf("    %s  %s\n", ui.ProfileID.Render(p.ID), ui.ProfileDesc.Render(p.Summary))
+			layerTag := fmt.Sprintf("[%s]", p.Layer)
+			fmt.Printf("    %s  %s  %s\n", ui.ProfileID.Render(p.ID), ui.DimStyle.Render(layerTag), ui.ProfileDesc.Render(p.Summary))
 			if p.ScaffoldCmd != "" {
 				fmt.Printf("    %s  %s\n", ui.DimStyle.Render("  scaffold:"), ui.DimStyle.Render(p.ScaffoldCmd))
 			}
 		}
 		fmt.Println()
 
-		fmt.Println(ui.Heading.Render("  Language & framework profiles:"))
+		fmt.Println(ui.Heading.Render("  Additional supported stacks:"))
 		for _, p := range scaffold.Profiles {
 			if p.Tier == 1 {
 				continue
 			}
-			fmt.Printf("    %s  %s\n", ui.ProfileID.Render(p.ID), ui.ProfileDesc.Render(p.Summary))
+			layerTag := fmt.Sprintf("[%s]", p.Layer)
+			fmt.Printf("    %s  %s  %s\n", ui.ProfileID.Render(p.ID), ui.DimStyle.Render(layerTag), ui.ProfileDesc.Render(p.Summary))
 			if p.ScaffoldCmd != "" {
 				fmt.Printf("    %s  %s\n", ui.DimStyle.Render("  scaffold:"), ui.DimStyle.Render(p.ScaffoldCmd))
 			}
@@ -48,6 +50,9 @@ var listCmd = &cobra.Command{
 		for _, a := range scaffold.Addons {
 			fmt.Printf("    %s  %s\n", ui.ProfileID.Render(a.ID), ui.ProfileDesc.Render(a.Summary))
 		}
+		fmt.Println()
+		fmt.Println(ui.DimStyle.Render("  UI stacks automatically include frontend-craft, a default palette,"))
+		fmt.Println(ui.DimStyle.Render("  and font pairing. No opt-in needed."))
 		fmt.Println()
 
 		return nil

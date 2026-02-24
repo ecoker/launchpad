@@ -63,6 +63,28 @@ these principles always apply.
 - **Hover/focus states**: always present, always visible. Use background color
   shifts and ring outlines, not just color changes alone.
 
+## Visual energy
+
+Apps should feel **alive**, not flat. Dark mode is not an excuse for dull.
+
+- **Gradient accents.** Use subtle gradients on hero sections, CTAs, and feature
+  cards. Linear gradients from your accent color to a shifted variant (e.g.
+  indigo → violet, blue → cyan). Not everywhere — just where you want the eye
+  to land.
+- **Glow effects.** Buttons and accent elements can have a soft glow:
+  `box-shadow: 0 0 20px rgba(accent, 0.3)`. Use sparingly — one or two glowing
+  elements per page, not everything.
+- **Surface depth.** Create visual layers: base background → elevated cards →
+  highlighted elements. Each layer should be subtly lighter than the one below.
+  Three to four distinct surface levels is ideal.
+- **Vibrant icons.** Icon badges and feature indicators should have colored
+  backgrounds (soft accent tints) rather than sitting on plain surfaces.
+- **Section contrast.** Alternate between dark and slightly lighter sections to
+  create visual rhythm in long pages. Use gradient transitions between sections
+  rather than hard color breaks.
+- **Typography weight.** Headlines should feel bold and confident. Use `font-weight:
+  700-800` for hero text. Pair with lighter body text (`400`) for contrast.
+
 ## Layout
 
 - Default to a **single-column centered layout** for content-heavy pages, with
