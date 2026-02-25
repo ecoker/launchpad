@@ -45,6 +45,7 @@ homebrew_casks:
   - repository:
       owner: ecoker
       name: homebrew-tap
+      token: "{{ .Env.BREW_TOKEN }}"
     name: launchpad
     homepage: "https://github.com/ecoker/launchpad"
     description: "AI-powered coding instruction scaffolder"
