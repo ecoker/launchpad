@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ehrencoker/agent-kit/internal/scaffold"
-	"github.com/ehrencoker/agent-kit/templates"
+	"github.com/ecoker/launchpad/internal/scaffold"
+	"github.com/ecoker/launchpad/templates"
 )
 
 // FileOutput represents a single file the AI wants to create.

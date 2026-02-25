@@ -1,4 +1,4 @@
-module github.com/ehrencoker/agent-kit
+module github.com/ecoker/launchpad
 
 go 1.25.0
 

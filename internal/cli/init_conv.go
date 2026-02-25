@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
-	"github.com/ehrencoker/agent-kit/internal/ai"
-	"github.com/ehrencoker/agent-kit/internal/scaffold"
-	"github.com/ehrencoker/agent-kit/internal/ui"
+	"github.com/ecoker/launchpad/internal/ai"
+	"github.com/ecoker/launchpad/internal/scaffold"
+	"github.com/ecoker/launchpad/internal/ui"
 	"github.com/spf13/cobra"
 )
 

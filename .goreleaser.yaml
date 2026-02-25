@@ -21,7 +21,7 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X github.com/ehrencoker/agent-kit/internal/cli.version={{.Version}}
+      - -X github.com/ecoker/launchpad/internal/cli.version={{.Version}}
 
 archives:
   - format: tar.gz
@@ -43,10 +43,10 @@ changelog:
 
 brews:
   - repository:
-      owner: ehrencoker
+      owner: ecoker
       name: homebrew-tap
     name: launchpad
-    homepage: "https://github.com/ehrencoker/agent-kit"
+    homepage: "https://github.com/ecoker/launchpad"
     description: "AI-powered coding instruction scaffolder"
     license: "MIT"
     install: |
@@ -56,7 +56,7 @@ brews:
 
 release:
   github:
-    owner: ehrencoker
-    name: agent-kit
+    owner: ecoker
+    name: launchpad
   draft: false
   prerelease: auto

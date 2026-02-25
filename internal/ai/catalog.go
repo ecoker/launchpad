@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ehrencoker/agent-kit/internal/scaffold"
+	"github.com/ecoker/launchpad/internal/scaffold"
 )
 
 // ContextAsset is a selectable instruction source defined in this repository.

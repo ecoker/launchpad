@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/ehrencoker/agent-kit/internal/scaffold"
-	"github.com/ehrencoker/agent-kit/internal/ui"
+	"github.com/ecoker/launchpad/internal/scaffold"
+	"github.com/ecoker/launchpad/internal/ui"
 	"github.com/spf13/cobra"
 )
 

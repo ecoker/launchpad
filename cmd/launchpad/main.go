@@ -4,7 +4,7 @@ import (
 "fmt"
 "os"
 
-"github.com/ehrencoker/agent-kit/internal/cli"
+"github.com/ecoker/launchpad/internal/cli"
 )
 
 func main() {

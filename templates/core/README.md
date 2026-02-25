@@ -35,4 +35,4 @@ These instructions are shaped by a few core beliefs:
 
 ---
 
-*Scaffolded with [agent-kit](https://github.com/ehrencoker/agent-kit).*
+*Scaffolded with [launchpad](https://github.com/ecoker/launchpad).*

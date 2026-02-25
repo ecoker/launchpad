@@ -1,13 +1,13 @@
 #!/bin/sh
 # Launchpad installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/ehrencoker/agent-kit/main/install.sh | sh
+# Usage: curl -fsSL https://raw.githubusercontent.com/ecoker/launchpad/main/install.sh | sh
 #
 # This script downloads the latest launchpad binary for your platform
 # and installs it to /usr/local/bin (or a custom location).
 
 set -e
 
-REPO="ehrencoker/agent-kit"
+REPO="ecoker/launchpad"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BINARY="launchpad"
 

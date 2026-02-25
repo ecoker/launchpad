@@ -31,13 +31,13 @@ instructions tailored to your stack, team, and coding philosophy.
 
 ```bash
 # Homebrew (macOS / Linux)
-brew install ehrencoker/tap/launchpad
+brew install ecoker/tap/launchpad
 
 # Or curl
-curl -sSfL https://raw.githubusercontent.com/ehrencoker/agent-kit/main/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/ecoker/launchpad/main/install.sh | sh
 
 # Or build from source
-go install github.com/ehrencoker/agent-kit/cmd/launchpad@latest
+go install github.com/ecoker/launchpad/cmd/launchpad@latest
 ```
 
 ## Usage
