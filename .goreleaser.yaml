@@ -24,11 +24,11 @@ builds:
       - -X github.com/ecoker/launchpad/internal/cli.version={{.Version}}
 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 
 checksum:
   name_template: "checksums.txt"
@@ -41,7 +41,7 @@ changelog:
       - "^test:"
       - "^ci:"
 
-brews:
+homebrew_casks:
   - repository:
       owner: ecoker
       name: homebrew-tap
@@ -49,10 +49,7 @@ brews:
     homepage: "https://github.com/ecoker/launchpad"
     description: "AI-powered coding instruction scaffolder"
     license: "MIT"
-    install: |
-      bin.install "launchpad"
-    test: |
-      system "#{bin}/launchpad", "list"
+    binary: "launchpad"
 
 release:
   github:
