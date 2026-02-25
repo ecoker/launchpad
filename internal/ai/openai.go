@@ -48,7 +48,7 @@ func NewOpenAIProvider(apiKey string, opts ...OpenAIOption) *OpenAIProvider {
 	p := &OpenAIProvider{
 		apiKey:     strings.TrimSpace(apiKey),
 		model:      defaultModel,
-		httpClient: &http.Client{Timeout: 120 * time.Second},
+		httpClient: &http.Client{Timeout: 180 * time.Second},
 	}
 	for _, o := range opts {
 		o(p)

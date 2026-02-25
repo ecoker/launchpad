@@ -10,9 +10,14 @@
 - Avoid hidden coupling across global stores
 - Use typed boundaries for API/data interactions
 
+## TypeScript Config
+- `strict: true` in `tsconfig.json` — SvelteKit default, never relax
+- Zod or Valibot for runtime validation in server load/actions
+- `type` over `interface`; `as const` objects over `enum`
+
 ## Quality Defaults
 - Lint/style: strict TS checks + Svelte linting
-- Testing: component behavior tests + core domain unit tests
+- Testing: Vitest for unit tests, Playwright for E2E, Testing Library for component behavior
 
 ## Starter Bias
 Scaffold for velocity with maintainability: theme tokens, route structure, and one real feature slice.

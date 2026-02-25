@@ -60,10 +60,19 @@ what it does, it's doing too much. Split it.
 
 ## Quality bar
 
-- Leave every file cleaner than you found it.
-- Keep PRs focused: one concern per PR.
-- Write tests for behavior, not implementation details.
+- **No dead code.** If a function, variable, or import is unused, delete it.
+  Version control remembers.
+- **No commented-out code.** Same reason. Delete it or don't merge it.
+- **No untyped boundaries.** Every function that accepts or returns data across
+  a module, API, or layer boundary must have explicit types. No `any`, no
+  `dynamic`, no `interface{}` at boundaries.
+- **No swallowed errors.** Every error must be handled (returned, logged, or
+  re-raised with context) or explicitly marked as intentionally ignored with
+  a comment explaining why.
+- **Every new behavior gets a test.** If you add a code path, add a test
+  that exercises it. If you fix a bug, add a test that catches the regression.
 - Prefer integration tests that exercise real boundaries over mocks of everything.
+- Keep PRs focused: one concern per PR.
 
 ## Influences
 

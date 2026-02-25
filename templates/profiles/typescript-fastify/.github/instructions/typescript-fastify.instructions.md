@@ -127,10 +127,19 @@ export default fp(dbPlugin);
 
 ## TypeScript discipline
 
-- **TypeBox for runtime + compile-time safety.** One schema, two guarantees.
-- **Type boundaries explicitly.** Request/response shapes, service interfaces.
-- **No `any`.** Use `unknown` and narrow.
-- **Discriminated unions** for domain state modeling.
+- **`strict: true` in `tsconfig.json`.** All strict checks enabled,
+  including `noUncheckedIndexedAccess`.
+- **TypeBox for runtime + compile-time safety.** Define schemas once;
+  derive TypeScript types with `Static<typeof schema>`. No type
+  duplication between validation and type definitions.
+- **Type all boundaries explicitly.** Request/response shapes, service
+  interfaces, config, environment variables.
+- **No `any`.** Use `unknown` and narrow with type guards.
+- **Discriminated unions** for domain state and error modeling.
+- **Types live next to the code.** Route schemas co-located with route
+  files. Shared domain types in a `domain/` or `types/` module.
+- **Utility types deliberately.** `Pick`, `Omit`, `Partial` to derive
+  request/response subtypes from domain types.
 
 ## What to avoid
 
@@ -139,3 +148,4 @@ export default fp(dbPlugin);
 - Skipping schema validation — every route gets a schema.
 - `any` types — use TypeBox inference.
 - `require()` — use ESM imports.
+- `// @ts-ignore` or `// @ts-expect-error` without a linked issue.

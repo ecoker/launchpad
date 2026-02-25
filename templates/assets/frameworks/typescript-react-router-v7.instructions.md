@@ -10,9 +10,14 @@
 - Use typed route-level data contracts
 - Keep side effects at boundaries and test pure logic directly
 
+## TypeScript Config
+- `strict: true` in `tsconfig.json` with `noUncheckedIndexedAccess`
+- Zod for loader/action validation; infer types with `z.infer<>`
+- `type` over `interface`; `as const` objects over `enum`
+
 ## Quality Defaults
 - Lint/style: strict TS + React lint rules
-- Testing: route/module integration tests + unit tests for domain utilities
+- Testing: Vitest for unit + route integration tests, Playwright for E2E
 
 ## Starter Bias
 Scaffold route hierarchy, typed data flow, and one complete feature route with tests.

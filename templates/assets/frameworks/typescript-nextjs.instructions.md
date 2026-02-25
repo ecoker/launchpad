@@ -10,9 +10,15 @@
 - Avoid business logic in UI components
 - Keep data fetching and caching behavior explicit
 
+## TypeScript Config
+- `strict: true` in `tsconfig.json` — non-negotiable
+- Enable `noUncheckedIndexedAccess` for safer array/object access
+- Zod for runtime validation; infer types with `z.infer<>` to avoid duplication
+- `type` over `interface`; `as const` objects over `enum`
+
 ## Quality Defaults
 - Lint/style: strict TypeScript + ESLint gate
-- Testing: unit tests for domain logic + route/component smoke coverage
+- Testing: Vitest for unit tests, Playwright for E2E, Testing Library for components
 
 ## Starter Bias
 Scaffold with clear app shell, route groups, typed env config, and one end-to-end feature slice.

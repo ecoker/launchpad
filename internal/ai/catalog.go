@@ -195,8 +195,15 @@ func catalog() []ContextAsset {
 			ID:           "asset.testing.pragmatic",
 			Category:     "testing",
 			Label:        "Pragmatic Testing",
-			Summary:      "Fast feedback testing pyramid with contract and integration confidence",
+			Summary:      "Comprehensive testing conventions with framework-specific guidance, test pyramid, and file conventions",
 			TemplatePath: "assets/testing/pragmatic.instructions.md",
+		},
+		{
+			ID:           "asset.server.patterns",
+			Category:     "server",
+			Label:        "Server-Side Patterns",
+			Summary:      "Validation, error handling, form actions, and data access conventions for every backend framework",
+			TemplatePath: "assets/server/server-patterns.instructions.md",
 		},
 	}
 }

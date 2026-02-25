@@ -112,12 +112,28 @@ export const load: PageServerLoad = async () => {
 
 ## TypeScript discipline
 
+- **`strict: true` in `tsconfig.json`.** SvelteKit scaffolds this by
+  default — never relax it. All strict checks enabled.
 - **Type boundaries explicitly.** API responses, component props, store
   values — all typed.
-- **`type` over `interface`** for domain models.
-- **`unknown` over `any`.** Narrow with type guards.
-- **Discriminated unions** for state modeling.
-- **No enums.** Use `const` objects or union types.
+- **`type` over `interface`** for domain models — interfaces only for
+  contracts implemented by classes (rare in modern TS).
+- **`unknown` over `any`.** Narrow with type guards or Zod/Valibot.
+- **Discriminated unions** for state modeling:
+  ```typescript
+  type AsyncState<T> =
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "success"; data: T }
+    | { status: "error"; error: string };
+  ```
+- **No enums.** Use `as const` objects or string literal union types.
+- **Types live next to the code.** Co-locate in the same file or sibling
+  `types.ts`. Domain types in `$lib/domain/`.
+- **Zod or Valibot for runtime validation** in `+page.server.ts` actions
+  and load functions. Infer TS types from schemas to avoid duplication.
+- **Utility types deliberately.** `Pick`, `Omit`, `Partial` to derive
+  variants from a single source of truth.
 
 ## What to avoid
 
@@ -128,3 +144,4 @@ export const load: PageServerLoad = async () => {
 - Heavy client-side JS when SvelteKit can handle it server-side.
 - Manual WebSocket management — consider whether the use case truly
   needs it or whether server load functions with invalidation suffice.
+- `// @ts-ignore` or `// @ts-expect-error` without a linked issue.

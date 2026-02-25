@@ -149,6 +149,59 @@ what changed and where to look.
   server with ephemeral UI concerns (open/closed toggles, hover states, form
   draft text). Use the right tool for each.
 
+## Error, loading, and empty states
+
+Every data-driven component has at least four states: **loading**, **loaded**,
+**empty**, and **error**. Design all four intentionally — not just the happy path.
+
+### Loading states
+- Show a **skeleton or placeholder** that matches the layout of the loaded
+  content. Not a centered spinner on a blank page.
+- Use `aria-busy="true"` on the loading container for screen readers.
+- For fast operations (<300ms), consider showing nothing rather than a flash
+  of skeleton. Use a short delay before showing the loading indicator.
+- For long operations (>2s), show progress feedback — a progress bar, a
+  status message, or an animation that communicates "working."
+- **Framework patterns:**
+  - React/Next.js: `<Suspense fallback={<Skeleton />}>` for server components;
+    conditional rendering for client state.
+  - SvelteKit: `{#await}` blocks in templates; `+loading.svelte` for route-level.
+  - Phoenix LiveView: `phx-loading` classes, `assign_async`/`start_async`
+    with explicit loading assigns.
+  - Rails/Turbo: skeleton content in Turbo frames via `loading="lazy"`.
+  - Flutter: `FutureBuilder`/`StreamBuilder` with explicit `connectionState`
+    handling. `Shimmer` package for skeleton effects.
+
+### Empty states
+- Never show a blank area where data would be. Show an **empty state** that
+  explains what's missing and, when possible, offers a call-to-action
+  ("Create your first project", "No results match your filter").
+- Empty states should feel designed, not forgotten. Use an icon, a brief
+  message, and an optional action button.
+- Keep empty state text helpful, not apologetic. "No orders yet" with a
+  "Create order" button, not "Sorry, nothing to show."
+
+### Error states
+- Show errors **inline and contextual** — next to the form field, inside the
+  component that failed, not in a generic toast that disappears.
+- For page-level errors (500, network failure), show a **full error page** with
+  a retry action. Don't leave the user on a blank or broken screen.
+- For partial errors (one widget fails, rest of page is fine), degrade
+  gracefully — show the error in that component's space without breaking
+  the surrounding layout.
+- Never show raw error messages, stack traces, or technical details to end
+  users. Log them server-side; show a human-friendly message client-side.
+- **Framework patterns:**
+  - React/Next.js: `error.tsx` boundary component per route; field-level
+    error display tied to form validation state.
+  - SvelteKit: `+error.svelte` per route; `{#if form?.errors?.field}` for
+    field-level errors in form actions.
+  - Phoenix LiveView: changeset errors rendered inline with `<.error>`;
+    `phx-disconnected` for connection loss UI.
+  - Rails: `flash` messages for action-level; `@model.errors` for field-level.
+  - Flutter: `ErrorWidget` replacement; `SnackBar` for transient errors;
+    inline `Text` for field validation.
+
 ## Performance awareness
 
 - **Measure before optimizing.** Use Lighthouse, Web Vitals, browser DevTools,

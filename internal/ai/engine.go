@@ -125,12 +125,14 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 	// Pull scaffold command from the profile registry
 	scaffoldInfo := scaffoldCommandForProfile(sel.ProfileID)
 
-	// Check which design-related assets are in the selection so we can
+	// Check which assets are in the selection so we can
 	// give the model explicit synthesis instructions.
 	hasDesignSystem := false
 	hasPalette := false
 	hasFonts := false
 	hasFrontendCraft := false
+	hasServerPatterns := false
+	hasTesting := false
 	for _, a := range assets {
 		switch {
 		case a.ID == "core.design-system":
@@ -141,7 +143,17 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 			hasFonts = true
 		case a.ID == "addon.frontend-craft":
 			hasFrontendCraft = true
+		case a.ID == "asset.server.patterns":
+			hasServerPatterns = true
+		case a.ID == "asset.testing.pragmatic":
+			hasTesting = true
 		}
+	}
+
+	// Detect whether the selected profile has a UI surface.
+	isUIStack := false
+	if profile := scaffold.FindProfile(sel.ProfileID); profile != nil {
+		isUIStack = profile.HasUI
 	}
 
 	var designGuidance strings.Builder
@@ -166,10 +178,67 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 			designGuidance.WriteString("  idioms (e.g. LiveView function components for Phoenix, Svelte components\n")
 			designGuidance.WriteString("  for SvelteKit, ViewComponent for Rails, Blade for Laravel, widgets for\n")
 			designGuidance.WriteString("  Flutter). Do NOT emit React/JSX examples for non-React stacks.\n")
+			designGuidance.WriteString("- IMPORTANT: The frontend-craft file MUST preserve guidance on ALL of these:\n")
+			designGuidance.WriteString("  loading/empty/error state patterns, state management, motion/animation,\n")
+			designGuidance.WriteString("  accessibility, and performance. These are the most actionable parts —\n")
+			designGuidance.WriteString("  do NOT compress them away. Adapt examples to the selected framework.\n")
 		}
 		designGuidance.WriteString("- Generate a dedicated design-system.instructions.md that synthesizes the\n")
 		designGuidance.WriteString("  baseline + palette + fonts into framework-appropriate tokens and setup.\n")
 		designGuidance.WriteString("  The applyTo glob MUST match the selected framework's template/style files.\n\n")
+	}
+
+	// Build conditional asset instructions.
+	var assetGuidance strings.Builder
+	if hasServerPatterns {
+		assetGuidance.WriteString("SERVER PATTERNS:\n")
+		assetGuidance.WriteString("A server-patterns asset is included. Generate a dedicated\n")
+		assetGuidance.WriteString("server-patterns.instructions.md file with validation, error handling,\n")
+		assetGuidance.WriteString("data access, and form/action conventions adapted to the selected framework.\n")
+		assetGuidance.WriteString("The applyTo glob MUST target server-side source files for the framework.\n\n")
+	}
+	if hasTesting {
+		assetGuidance.WriteString("TESTING:\n")
+		assetGuidance.WriteString("A testing asset is included. Generate a dedicated testing.instructions.md\n")
+		assetGuidance.WriteString("with ONLY the framework-specific testing guidance (runner, file conventions,\n")
+		assetGuidance.WriteString("setup/teardown, assertion style). Drop guidance for other frameworks.\n\n")
+	}
+
+	// Resolve the actual scaffold command with project name substituted.
+	scaffoldResolved := strings.ReplaceAll(scaffoldInfo, "{{name}}", projectName)
+	scaffoldResolved = strings.ReplaceAll(scaffoldResolved, "{{module}}", projectName)
+
+	// Build profile file guidance.
+	profileFileGlob := "**"
+	switch sel.ProfileID {
+	case "elixir-phoenix":
+		profileFileGlob = "**/*.{ex,exs,heex,leex}"
+	case "typescript-sveltekit", "typescript-nextjs", "typescript-fastify":
+		profileFileGlob = "**/*.{ts,tsx,svelte,js,jsx}"
+	case "ruby-rails":
+		profileFileGlob = "**/*.{rb,erb,haml}"
+	case "go-service":
+		profileFileGlob = "**/*.go"
+	case "rust-axum":
+		profileFileGlob = "**/*.rs"
+	case "dotnet-api":
+		profileFileGlob = "**/*.{cs,csproj}"
+	case "java-spring":
+		profileFileGlob = "**/*.{java,kt}"
+	case "python-fastapi", "python-django":
+		profileFileGlob = "**/*.py"
+	case "dart-flutter":
+		profileFileGlob = "**/*.dart"
+	case "laravel":
+		profileFileGlob = "**/*.{php,blade.php}"
+	}
+
+	var uiGuidance string
+	if isUIStack {
+		uiGuidance = "UI STACK NOTE:\n" +
+			"This is a UI framework. The copilot-instructions.md MUST mention the\n" +
+			"styling system (e.g. Tailwind CSS) as part of the always-on standards.\n" +
+			"A brief reference is sufficient — detailed tokens belong in design-system.instructions.md.\n\n"
 	}
 
 	prompt := fmt.Sprintf(
@@ -182,6 +251,12 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 			"The AI agent should NEVER generate framework boilerplate files (package.json,\n"+
 			"mix.exs, Gemfile, etc.). The scaffold command handles all of that. The agent's\n"+
 			"job is to write application code AFTER the scaffold is complete.\n\n"+
+			"PROJECT NAME SUBSTITUTION:\n"+
+			"The project name is %q. In all generated files, use the actual project name —\n"+
+			"NEVER output template variables like {{name}} or {{module}}. For example,\n"+
+			"write %q not {{name}} in scaffold commands and file references.\n\n"+
+			"%s"+
+			"%s"+
 			"%s"+
 			"ADAPTATION RULE:\n"+
 			"All generated instruction files MUST use the selected framework's idioms.\n"+
@@ -193,9 +268,13 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 			"===FILE: relative/path===\n(content)\n===END_FILE===\n\n"+
 			"Required:\n"+
 			"1. .github/copilot-instructions.md — always-on standards from core + profile assets\n"+
-			"2. .github/instructions/*.instructions.md — one per concern, YAML frontmatter applyTo glob required\n"+
-			"3. AGENTS.md — multi-agent ground rules\n"+
-			"4. .github/prompts/start.prompt.md — YAML frontmatter MUST be exactly:\n"+
+			"2. .github/instructions/<profile>.instructions.md — framework-specific conventions from the\n"+
+			"   profile asset. YAML frontmatter with applyTo: %q to scope to framework source files.\n"+
+			"   This MUST be a SEPARATE file from copilot-instructions.md.\n"+
+			"3. .github/instructions/*.instructions.md — one per additional concern (architecture,\n"+
+			"   design-system, frontend-craft, testing, server-patterns, etc.) with YAML frontmatter applyTo glob\n"+
+			"4. AGENTS.md — multi-agent ground rules\n"+
+			"5. .github/prompts/start.prompt.md — YAML frontmatter MUST be exactly:\n"+
 			"   ---\n"+
 			"   description: \"<one-sentence description>\"\n"+
 			"   mode: agent\n"+
@@ -211,10 +290,15 @@ func (e *Engine) GenerateFiles(ctx context.Context, projectName string, sel *Sel
 		sel.ProfileID,
 		strings.Join(sel.AddonIDs, ", "),
 		strings.Join(summary, ", "),
-		scaffoldInfo,
+		scaffoldResolved,
+		projectName,
+		projectName,
+		uiGuidance,
 		designGuidance.String(),
+		assetGuidance.String(),
 		contextBlocks.String(),
-		scaffoldInfo,
+		profileFileGlob,
+		scaffoldResolved,
 	)
 
 	raw, err := e.provider.Send(ctx, prompt, "")

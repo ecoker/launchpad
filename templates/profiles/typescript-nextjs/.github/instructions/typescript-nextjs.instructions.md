@@ -116,12 +116,30 @@ export async function createProject(formData: FormData) {
 
 ## TypeScript discipline
 
+- **`strict: true` in `tsconfig.json`.** Non-negotiable. This enables
+  `strictNullChecks`, `noUncheckedIndexedAccess`, `strictFunctionTypes`,
+  and all other strict flags. Never disable individual strict checks.
 - **Type boundaries explicitly.** API responses, component props, action
   returns — all typed.
-- **`type` over `interface`** for domain models.
-- **Discriminated unions** for state modeling.
-- **No `any`.** Use `unknown` and narrow.
-- **No enums.** Use `const` objects or union types.
+- **`type` over `interface`** for domain models — interfaces only for
+  contracts implemented by classes (rare in modern TS).
+- **Discriminated unions** for state modeling:
+  ```typescript
+  type AsyncState<T> =
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "success"; data: T }
+    | { status: "error"; error: string };
+  ```
+- **No `any`.** Use `unknown` and narrow with type guards.
+- **No enums.** Use `as const` objects or string literal union types.
+- **Types live next to the code that uses them.** Co-locate types in the
+  same file or a sibling `types.ts`. No global `types/` barrel folder.
+- **Zod for runtime validation** at server boundaries (Server Actions,
+  API routes). Infer TypeScript types from Zod schemas with `z.infer<>`
+  to avoid type duplication.
+- **Utility types deliberately.** Use `Pick`, `Omit`, `Partial`, `Required`
+  to derive types from a single source. Don't duplicate fields across types.
 
 ## What to avoid
 
@@ -131,3 +149,4 @@ export async function createProject(formData: FormData) {
 - `any` — use `unknown` and narrow.
 - Barrel files — they break tree-shaking.
 - Client-side data fetching with `useEffect` for initial page data.
+- `// @ts-ignore` or `// @ts-expect-error` without a linked issue.

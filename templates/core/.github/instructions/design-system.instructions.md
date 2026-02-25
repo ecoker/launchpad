@@ -16,19 +16,23 @@ these principles always apply.
 
 - Default to a **dark color scheme**. Light mode is optional but dark mode
   should look intentional, not bolted-on.
-- Use near-black backgrounds (`#0f0f0f`–`#141414`), slightly elevated surfaces
-  (`#1a1a1a`–`#1e1e1e`), and subtle borders (`#2a2a2a`–`#303030`).
-- Text should be soft white (`#e4e4e7`) with muted secondary text (`#71717a`).
+- Background surfaces should use near-black tones, slightly elevated surfaces
+  a step lighter, and borders subtly lighter still. Aim for 3–4 distinct
+  surface levels that create depth without harsh contrast.
+- Text should be soft white with muted secondary text.
 - Never use pure `#000000` backgrounds or pure `#ffffff` text — the contrast is
   harsh and fatiguing.
 
+> **Note:** If a palette asset is selected, its specific color tokens replace
+> the generic color guidance below. The principles (dark-first, restrained
+> accent, semantic status colors) always apply — only the concrete values change.
+
 ## Color attitude
 
-- Keep the palette **restrained**. One accent color (blue/indigo/violet family
-  by default), plus semantic status colors (green for success, red for danger,
-  amber for warning).
-- Accent color should be **vibrant but not neon**: think `#6366f1` (indigo) or
-  `#3b82f6` (blue), not `#00ff00`.
+- Keep the palette **restrained**. One accent color family plus semantic status
+  colors (green for success, red for danger, amber for warning).
+- Accent color should be **vibrant but not neon** — indigo, blue, or violet
+  family by default.
 - Use color to **signal meaning**, not to decorate. If everything is colorful,
   nothing stands out.
 

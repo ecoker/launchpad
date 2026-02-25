@@ -68,7 +68,7 @@ func TestSmokeGenerateFiles(t *testing.T) {
 		Rationale:  "Smoke test: Phoenix + frontend-craft + obsidian palette + Inter fonts + pragmatic testing",
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Second)
 	defer cancel()
 
 	t.Log("Calling GenerateFiles (this hits the real API)...")
