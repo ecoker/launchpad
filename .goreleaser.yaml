@@ -49,7 +49,7 @@ homebrew_casks:
     homepage: "https://github.com/ecoker/launchpad"
     description: "AI-powered coding instruction scaffolder"
     license: "MIT"
-    binary: "launchpad"
+    binaries: ["launchpad"]
 
 release:
   github:
